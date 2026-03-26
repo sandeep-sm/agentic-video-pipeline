@@ -1,0 +1,499 @@
+{
+  "_meta": {
+    "description": "Registry of all available models for the agentic video pipeline. The Model Router reads this to make selection decisions. Add new models here; do not hardcode model names in pipeline code.",
+    "last_updated": "2026-03-25",
+    "quality_tiers": {
+      "1": "Highest quality, paid API — use for final renders",
+      "2": "Good quality, paid API — use for production work",
+      "3": "Open source, local GPU — use when API unavailable or cost matters",
+      "4": "Fast/free, lower quality — use for drafts and previews"
+    }
+  },
+
+  "models": [
+
+    // ─── VIDEO GENERATION: TEXT-TO-VIDEO ─────────────────────────────────────
+
+    {
+      "model_id": "veo3-t2v",
+      "display_name": "Google Veo 3 (Text-to-Video)",
+      "category": "text_to_video",
+      "access": "api",
+      "api_key_env": "GOOGLE_API_KEY",
+      "cost_per_second": 0.35,
+      "avg_latency_seconds": 60,
+      "vram_required_gb": 0,
+      "input_format": { "type": "text_prompt" },
+      "output_format": { "type": "video", "format": "mp4", "max_fps": 24, "max_duration_seconds": 8, "has_audio": true },
+      "quality_tier": 1,
+      "strengths": ["highest_quality", "native_audio_generation", "camera_control", "long_duration"],
+      "weaknesses": ["expensive", "api_only", "google_account_required"],
+      "watermark": false,
+      "notes": "Best overall quality as of 2026. Supports camera motion prompts."
+    },
+
+    {
+      "model_id": "kling2-t2v",
+      "display_name": "Kling 2.0 (Text-to-Video)",
+      "category": "text_to_video",
+      "access": "api",
+      "api_key_env": "KLING_API_KEY",
+      "cost_per_second": 0.14,
+      "avg_latency_seconds": 45,
+      "vram_required_gb": 0,
+      "input_format": { "type": "text_prompt", "negative_prompt_supported": true },
+      "output_format": { "type": "video", "format": "mp4", "typical_fps": 24, "max_duration_seconds": 10 },
+      "quality_tier": 2,
+      "strengths": ["high_motion_fidelity", "longer_clips", "good_character_consistency"],
+      "weaknesses": ["api_only", "watermark_on_free_tier"],
+      "watermark": false,
+      "notes": "Strong for motion-heavy scenes. Good balance of quality vs cost."
+    },
+
+    {
+      "model_id": "wan2.1-t2v",
+      "display_name": "WAN 2.1 (Text-to-Video, Local)",
+      "category": "text_to_video",
+      "access": "local",
+      "source": "huggingface",
+      "hf_repo": "Wan-AI/Wan2.1-T2V-14B",
+      "cost_per_call": 0.0,
+      "avg_latency_seconds": 180,
+      "vram_required_gb": 16,
+      "input_format": { "type": "text_prompt", "negative_prompt_supported": true },
+      "output_format": { "type": "video", "format": "mp4", "typical_fps": 16, "max_duration_seconds": 5 },
+      "quality_tier": 3,
+      "strengths": ["free", "no_watermark", "open_source", "private"],
+      "weaknesses": ["slow", "needs_16gb_vram", "short_max_duration", "lower_quality"],
+      "watermark": false,
+      "notes": "Best free local option. Needs significant VRAM."
+    },
+
+    {
+      "model_id": "ltx-video-t2v",
+      "display_name": "LTX-Video (Text-to-Video, Fast Local)",
+      "category": "text_to_video",
+      "access": "local",
+      "source": "huggingface",
+      "hf_repo": "Lightricks/LTX-Video",
+      "cost_per_call": 0.0,
+      "avg_latency_seconds": 30,
+      "vram_required_gb": 8,
+      "input_format": { "type": "text_prompt" },
+      "output_format": { "type": "video", "format": "mp4", "typical_fps": 24, "max_duration_seconds": 5 },
+      "quality_tier": 4,
+      "strengths": ["very_fast", "low_vram", "good_for_drafts"],
+      "weaknesses": ["lower_quality", "limited_motion_complexity"],
+      "watermark": false,
+      "notes": "Use for rapid drafts and previews before final render."
+    },
+
+    // ─── VIDEO GENERATION: IMAGE-TO-VIDEO ────────────────────────────────────
+
+    {
+      "model_id": "veo3-i2v",
+      "display_name": "Google Veo 3 (Image-to-Video)",
+      "category": "image_to_video",
+      "access": "api",
+      "api_key_env": "GOOGLE_API_KEY",
+      "cost_per_second": 0.35,
+      "avg_latency_seconds": 60,
+      "vram_required_gb": 0,
+      "input_format": { "type": "image", "accepted_formats": ["jpg", "png", "webp"], "max_resolution": "1920x1080" },
+      "output_format": { "type": "video", "format": "mp4", "max_fps": 24, "max_duration_seconds": 8 },
+      "quality_tier": 1,
+      "strengths": ["best_subject_consistency", "natural_motion", "high_resolution"],
+      "weaknesses": ["expensive", "api_only"],
+      "watermark": false
+    },
+
+    {
+      "model_id": "kling2-i2v",
+      "display_name": "Kling 2.0 (Image-to-Video)",
+      "category": "image_to_video",
+      "access": "api",
+      "api_key_env": "KLING_API_KEY",
+      "cost_per_second": 0.14,
+      "avg_latency_seconds": 45,
+      "vram_required_gb": 0,
+      "input_format": { "type": "image", "accepted_formats": ["jpg", "png"], "max_resolution": "1280x720" },
+      "output_format": { "type": "video", "format": "mp4", "typical_fps": 24, "max_duration_seconds": 10 },
+      "quality_tier": 2,
+      "strengths": ["strong_motion", "character_preservation", "longer_clips"],
+      "weaknesses": ["api_only"],
+      "watermark": false
+    },
+
+    {
+      "model_id": "wan2.1-i2v",
+      "display_name": "WAN 2.1 (Image-to-Video, Local)",
+      "category": "image_to_video",
+      "access": "local",
+      "source": "huggingface",
+      "hf_repo": "Wan-AI/Wan2.1-I2V-14B-480P",
+      "cost_per_call": 0.0,
+      "avg_latency_seconds": 120,
+      "vram_required_gb": 16,
+      "input_format": { "type": "image", "accepted_formats": ["jpg", "png"], "max_resolution": "832x480" },
+      "output_format": { "type": "video", "format": "mp4", "typical_fps": 16, "max_duration_seconds": 5 },
+      "quality_tier": 3,
+      "strengths": ["free", "open_source", "no_watermark"],
+      "weaknesses": ["slow", "needs_16gb_vram", "lower_resolution_output"],
+      "watermark": false
+    },
+
+    // ─── SEGMENTATION & ROTOSCOPING ───────────────────────────────────────────
+
+    {
+      "model_id": "sam2-video",
+      "display_name": "SAM 2 / SAM 3 (Video Object Segmentation)",
+      "category": "video_segmentation",
+      "access": "local",
+      "source": "huggingface",
+      "hf_repo": "facebook/sam2-hiera-large",
+      "cost_per_call": 0.0,
+      "avg_latency_seconds": 20,
+      "vram_required_gb": 8,
+      "input_format": { "type": "video_or_frames", "prompt_types": ["point_click", "bounding_box", "text_via_grounded_sam"], "max_frames": 500 },
+      "output_format": { "type": "mask_sequence", "format": "png_sequence", "channels": 1 },
+      "quality_tier": 1,
+      "strengths": ["tracks_through_video", "handles_occlusion", "state_of_the_art_accuracy", "free"],
+      "weaknesses": ["needs_prompt_frame_annotation", "struggles_with_transparent_objects", "slow_on_long_videos"],
+      "watermark": false,
+      "notes": "Best for tracking subjects through generated video. Use point prompt on frame 0."
+    },
+
+    {
+      "model_id": "rmbg-2.0",
+      "display_name": "RMBG 2.0 (Single-Image Background Removal)",
+      "category": "image_segmentation",
+      "access": "local",
+      "source": "huggingface",
+      "hf_repo": "briaai/RMBG-2.0",
+      "cost_per_call": 0.0,
+      "avg_latency_seconds": 2,
+      "vram_required_gb": 4,
+      "input_format": { "type": "image", "accepted_formats": ["jpg", "png"] },
+      "output_format": { "type": "image", "format": "png", "channels": 4 },
+      "quality_tier": 1,
+      "strengths": ["very_fast", "excellent_edge_quality", "free", "handles_hair_and_fur"],
+      "weaknesses": ["single_image_only_no_video_tracking"],
+      "watermark": false,
+      "notes": "Use for static images. For video, use sam2-video instead."
+    },
+
+    {
+      "model_id": "birefnet",
+      "display_name": "BiRefNet (High-Detail Matting)",
+      "category": "image_segmentation",
+      "access": "local",
+      "source": "huggingface",
+      "hf_repo": "ZhengPeng7/BiRefNet",
+      "cost_per_call": 0.0,
+      "avg_latency_seconds": 3,
+      "vram_required_gb": 6,
+      "input_format": { "type": "image", "accepted_formats": ["jpg", "png"] },
+      "output_format": { "type": "image", "format": "png", "channels": 4 },
+      "quality_tier": 2,
+      "strengths": ["best_for_fine_detail", "excellent_hair_transparency_glass"],
+      "weaknesses": ["slower_than_rmbg", "single_image_only"],
+      "watermark": false,
+      "notes": "Fallback to this from RMBG when subject has fine hair, transparent elements, or complex edges."
+    },
+
+    // ─── VIDEO INPAINTING (OBJECT REMOVAL) ───────────────────────────────────
+
+    {
+      "model_id": "propainter",
+      "display_name": "ProPainter (Video Inpainting)",
+      "category": "video_inpainting",
+      "access": "local",
+      "source": "huggingface",
+      "hf_repo": "sczhou/ProPainter",
+      "cost_per_call": 0.0,
+      "avg_latency_seconds": 60,
+      "vram_required_gb": 8,
+      "input_format": { "type": "video_plus_mask", "mask_format": "png_sequence" },
+      "output_format": { "type": "video", "format": "mp4" },
+      "quality_tier": 2,
+      "strengths": ["temporally_consistent", "handles_large_regions", "free"],
+      "weaknesses": ["slow_on_long_clips", "struggles_with_complex_backgrounds"],
+      "watermark": false,
+      "notes": "Use after SAM2 masking to fill removed objects. Pair: sam2-video → propainter."
+    },
+
+    // ─── FACE & CHARACTER ANIMATION ──────────────────────────────────────────
+
+    {
+      "model_id": "liveportrait",
+      "display_name": "LivePortrait (Portrait Animation)",
+      "category": "face_animation",
+      "access": "local",
+      "source": "huggingface",
+      "hf_repo": "KwaiVGI/LivePortrait",
+      "cost_per_call": 0.0,
+      "avg_latency_seconds": 15,
+      "vram_required_gb": 4,
+      "input_format": { "type": "image_plus_driving_video", "accepted_formats": ["jpg", "png"] },
+      "output_format": { "type": "video", "format": "mp4", "typical_fps": 25 },
+      "quality_tier": 2,
+      "strengths": ["fast", "good_expression_transfer", "free", "no_training_required"],
+      "weaknesses": ["requires_driving_video", "frontal_faces_only", "artifacts_on_extreme_poses"],
+      "watermark": false,
+      "notes": "Animate a portrait image using a reference driving video for motion. Good for subtle expressions."
+    },
+
+    {
+      "model_id": "sadtalker",
+      "display_name": "SadTalker (Audio-Driven Face Animation)",
+      "category": "face_animation",
+      "access": "local",
+      "source": "huggingface",
+      "hf_repo": "vinthony/SadTalker",
+      "cost_per_call": 0.0,
+      "avg_latency_seconds": 30,
+      "vram_required_gb": 4,
+      "input_format": { "type": "image_plus_audio", "accepted_image_formats": ["jpg", "png"], "accepted_audio_formats": ["wav", "mp3"] },
+      "output_format": { "type": "video", "format": "mp4", "typical_fps": 25 },
+      "quality_tier": 3,
+      "strengths": ["audio_driven_lip_sync", "free", "no_training"],
+      "weaknesses": ["lower_quality_than_liveportrait", "best_for_talking_only"],
+      "watermark": false,
+      "notes": "Use when you have audio and want a portrait to speak it. Combine with ElevenLabs for full TTS pipeline."
+    },
+
+    // ─── IMAGE GENERATION ─────────────────────────────────────────────────────
+
+    {
+      "model_id": "flux1-dev",
+      "display_name": "FLUX.1 Dev (Image Generation)",
+      "category": "text_to_image",
+      "access": "local",
+      "source": "huggingface",
+      "hf_repo": "black-forest-labs/FLUX.1-dev",
+      "cost_per_call": 0.0,
+      "avg_latency_seconds": 15,
+      "vram_required_gb": 12,
+      "input_format": { "type": "text_prompt" },
+      "output_format": { "type": "image", "format": "png", "max_resolution": "2048x2048" },
+      "quality_tier": 2,
+      "strengths": ["state_of_the_art_quality", "photorealistic", "prompt_adherence", "free"],
+      "weaknesses": ["needs_12gb_vram", "no_commercial_use_without_pro_license"],
+      "watermark": false,
+      "notes": "Best open-source image gen for backgrounds, scene elements. Needs FLUX.1-schnell for speed."
+    },
+
+    {
+      "model_id": "dalle3",
+      "display_name": "DALL-E 3 (Image Generation)",
+      "category": "text_to_image",
+      "access": "api",
+      "api_key_env": "OPENAI_API_KEY",
+      "cost_per_image": 0.04,
+      "avg_latency_seconds": 10,
+      "vram_required_gb": 0,
+      "input_format": { "type": "text_prompt" },
+      "output_format": { "type": "image", "format": "png", "max_resolution": "1792x1024" },
+      "quality_tier": 1,
+      "strengths": ["excellent_prompt_following", "no_gpu_needed", "fast"],
+      "weaknesses": ["api_cost", "content_policy_restrictions"],
+      "watermark": false
+    },
+
+    // ─── IMAGE ENHANCEMENT ────────────────────────────────────────────────────
+
+    {
+      "model_id": "real-esrgan",
+      "display_name": "Real-ESRGAN (Video/Image Upscaling)",
+      "category": "upscaling",
+      "access": "local",
+      "source": "huggingface",
+      "hf_repo": "ai-forever/Real-ESRGAN",
+      "cost_per_call": 0.0,
+      "avg_latency_seconds": 10,
+      "vram_required_gb": 4,
+      "input_format": { "type": "image_or_video", "accepted_formats": ["jpg", "png", "mp4"] },
+      "output_format": { "type": "image_or_video", "scale_factors": [2, 4] },
+      "quality_tier": 2,
+      "strengths": ["sharpens_upscaled_content", "free", "handles_video"],
+      "weaknesses": ["can_over-sharpen", "slow_on_long_videos"],
+      "watermark": false,
+      "notes": "Always apply when upscaling lower-res model outputs to compositor resolution."
+    },
+
+    // ─── OBJECT / POINT TRACKING ──────────────────────────────────────────────
+
+    {
+      "model_id": "cotracker3",
+      "display_name": "CoTracker3 (Dense Point Tracking)",
+      "category": "point_tracking",
+      "access": "local",
+      "source": "huggingface",
+      "hf_repo": "facebook/cotracker3",
+      "cost_per_call": 0.0,
+      "avg_latency_seconds": 10,
+      "vram_required_gb": 6,
+      "input_format": { "type": "video_plus_query_points", "query_format": "pixel_coordinates_on_frame_0" },
+      "output_format": { "type": "trajectory_json", "format": "json" },
+      "quality_tier": 1,
+      "strengths": ["tracks_any_point_through_video", "handles_occlusion", "free"],
+      "weaknesses": ["needs_query_points_specified"],
+      "watermark": false,
+      "notes": "Use to attach graphics to moving objects. Output is (x,y) per frame — feed directly to compositor."
+    },
+
+    // ─── DEPTH ESTIMATION ────────────────────────────────────────────────────
+
+    {
+      "model_id": "depth-anything-v2",
+      "display_name": "Depth Anything V2 (Monocular Depth)",
+      "category": "depth_estimation",
+      "access": "local",
+      "source": "huggingface",
+      "hf_repo": "depth-anything/Depth-Anything-V2-Large",
+      "cost_per_call": 0.0,
+      "avg_latency_seconds": 5,
+      "vram_required_gb": 4,
+      "input_format": { "type": "image_or_video", "accepted_formats": ["jpg", "png", "mp4"] },
+      "output_format": { "type": "depth_map", "format": "png", "channels": 1, "dtype": "float32" },
+      "quality_tier": 1,
+      "strengths": ["best_open_source_depth", "fast", "works_on_video"],
+      "weaknesses": ["relative_depth_only_no_metric_scale"],
+      "watermark": false,
+      "notes": "Use for depth-aware compositing, parallax blur, fog layers by depth."
+    },
+
+    // ─── AUDIO ────────────────────────────────────────────────────────────────
+
+    {
+      "model_id": "whisper-large-v3",
+      "display_name": "Whisper Large V3 (Speech-to-Text)",
+      "category": "speech_to_text",
+      "access": "local",
+      "source": "huggingface",
+      "hf_repo": "openai/whisper-large-v3",
+      "cost_per_call": 0.0,
+      "avg_latency_seconds": 10,
+      "vram_required_gb": 6,
+      "input_format": { "type": "audio", "accepted_formats": ["wav", "mp3", "m4a", "mp4"] },
+      "output_format": { "type": "transcript_with_timestamps", "format": "json" },
+      "quality_tier": 1,
+      "strengths": ["best_open_source_asr", "word_level_timestamps", "multilingual", "free"],
+      "weaknesses": ["slow_on_long_audio_without_chunking"],
+      "watermark": false
+    },
+
+    {
+      "model_id": "elevenlabs-tts",
+      "display_name": "ElevenLabs TTS (Text-to-Speech)",
+      "category": "text_to_speech",
+      "access": "api",
+      "api_key_env": "ELEVENLABS_API_KEY",
+      "cost_per_1000_chars": 0.18,
+      "avg_latency_seconds": 3,
+      "vram_required_gb": 0,
+      "input_format": { "type": "text", "max_chars_per_call": 5000 },
+      "output_format": { "type": "audio", "format": "mp3", "sample_rate": 44100 },
+      "quality_tier": 1,
+      "strengths": ["best_voice_quality", "voice_cloning", "multilingual", "low_latency"],
+      "weaknesses": ["api_cost", "requires_subscription_for_cloning"],
+      "watermark": false
+    },
+
+    {
+      "model_id": "chatterbox-tts",
+      "display_name": "Chatterbox TTS (Open Source TTS)",
+      "category": "text_to_speech",
+      "access": "local",
+      "source": "huggingface",
+      "hf_repo": "ResembleAI/chatterbox",
+      "cost_per_call": 0.0,
+      "avg_latency_seconds": 8,
+      "vram_required_gb": 4,
+      "input_format": { "type": "text" },
+      "output_format": { "type": "audio", "format": "wav", "sample_rate": 24000 },
+      "quality_tier": 3,
+      "strengths": ["free", "voice_cloning_supported", "no_api_dependency"],
+      "weaknesses": ["lower_quality_than_elevenlabs", "needs_gpu"],
+      "watermark": false,
+      "notes": "Use as fallback when ElevenLabs API is unavailable or budget is zero."
+    },
+
+    // ─── CODE GENERATION (Universal Effect Spawner) ──────────────────────
+
+    {
+      "model_id": "claude-sonnet",
+      "display_name": "Claude Sonnet (Code Generation)",
+      "category": "code_gen",
+      "access": "api",
+      "api_key_env": "ANTHROPIC_API_KEY",
+      "cost_per_1k_tokens": 0.003,
+      "avg_latency_seconds": 10,
+      "vram_required_gb": 0,
+      "input_format": { "type": "text_prompt" },
+      "output_format": { "type": "python_script" },
+      "quality_tier": 2,
+      "strengths": ["excellent_code_quality", "follows_constraints", "handles_complex_effects", "reliable_output_path_usage"],
+      "weaknesses": ["api_cost", "no_local_option"],
+      "watermark": false,
+      "notes": "Primary code-gen model. Writes MoviePy/Pillow scripts for any visual effect. Output script is sandboxed and executed via subprocess. Tier 2 (not 1) because token cost is minimal — no reason to gate behind premium mode."
+    },
+
+    {
+      "model_id": "gemini-pro-code",
+      "display_name": "Gemini 1.5 Pro (Code Generation)",
+      "category": "code_gen",
+      "access": "api",
+      "api_key_env": "GOOGLE_API_KEY",
+      "cost_per_1k_tokens": 0.00125,
+      "avg_latency_seconds": 8,
+      "vram_required_gb": 0,
+      "input_format": { "type": "text_prompt" },
+      "output_format": { "type": "python_script" },
+      "quality_tier": 2,
+      "strengths": ["cheaper_than_claude", "fast", "good_python_quality"],
+      "weaknesses": ["slightly_less_precise_on_edge_cases"],
+      "watermark": false,
+      "notes": "Fallback code-gen model. Use when Anthropic key unavailable or in economy mode."
+    },
+
+    // ─── VLM (QUALITY VALIDATION & ASSET ANALYSIS) ───────────────────────
+
+    {
+      "model_id": "claude-vision",
+      "display_name": "Claude Vision (VLM for Quality Gates)",
+      "category": "vlm",
+      "access": "api",
+      "api_key_env": "ANTHROPIC_API_KEY",
+      "cost_per_1k_tokens": 0.003,
+      "avg_latency_seconds": 4,
+      "vram_required_gb": 0,
+      "input_format": { "type": "image_or_video_frame", "accepted_formats": ["jpg", "png", "webp"] },
+      "output_format": { "type": "structured_json_analysis" },
+      "quality_tier": 1,
+      "strengths": ["excellent_reasoning", "detailed_quality_assessment", "follows_structured_prompts"],
+      "weaknesses": ["api_cost", "no_local_option"],
+      "watermark": false,
+      "notes": "Primary VLM for all quality gates and asset analysis. Use gemini-vision as fallback."
+    },
+
+    {
+      "model_id": "gemini-vision",
+      "display_name": "Gemini Vision (VLM fallback)",
+      "category": "vlm",
+      "access": "api",
+      "api_key_env": "GOOGLE_API_KEY",
+      "cost_per_1k_tokens": 0.00125,
+      "avg_latency_seconds": 3,
+      "vram_required_gb": 0,
+      "input_format": { "type": "image_or_video_frame", "accepted_formats": ["jpg", "png", "webp"] },
+      "output_format": { "type": "structured_json_analysis" },
+      "quality_tier": 1,
+      "strengths": ["cheaper_than_claude", "fast", "native_video_understanding"],
+      "weaknesses": ["slightly_less_precise_on_structured_output"],
+      "watermark": false,
+      "notes": "Fallback VLM. Also preferred for video-frame-sequence analysis (native video support)."
+    }
+
+  ]
+}

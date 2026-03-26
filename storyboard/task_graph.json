@@ -1,0 +1,87 @@
+{
+  "video_params": {
+    "resolution": [
+      1920,
+      1080
+    ],
+    "fps": 30,
+    "total_duration_seconds": 9.0,
+    "background_color": "#000000"
+  },
+  "tasks": [
+    {
+      "task_id": "gen_anim_001",
+      "task_type": "image_to_video",
+      "description": "Animate end_card_bg.png based on intent",
+      "inputs": {
+        "image": "assets/end_card_bg.png",
+        "prompt": "Create a 45-second premium product showcase video for the \"AuraSound Pro\" wireless noise-cancelling headphones ($349). Style: cinematic, dark background, smooth professional motion. Scene flow: 1. (0-",
+        "duration_seconds": 3.0
+      },
+      "model_options": [
+        "kling2-i2v",
+        "wan2.1-i2v",
+        "ltx-video-t2v"
+      ],
+      "quality_requirement": "final",
+      "output_ref": "gen_anim_001_output",
+      "fallback_strategy": "degrade_quality",
+      "validation_prompt": "Does this video clip show natural motion consistent with the source image? Answer with a score from 1-10 and brief feedback.",
+      "status": "failed",
+      "output_path": null,
+      "quality_score": 0.0
+    },
+    {
+      "task_id": "gen_anim_002",
+      "task_type": "image_to_video",
+      "description": "Animate hero_angle.png based on intent",
+      "inputs": {
+        "image": "assets/hero_angle.png",
+        "prompt": "Create a 45-second premium product showcase video for the \"AuraSound Pro\" wireless noise-cancelling headphones ($349). Style: cinematic, dark background, smooth professional motion. Scene flow: 1. (0-",
+        "duration_seconds": 3.0
+      },
+      "model_options": [
+        "kling2-i2v",
+        "wan2.1-i2v",
+        "ltx-video-t2v"
+      ],
+      "quality_requirement": "final",
+      "output_ref": "gen_anim_002_output",
+      "fallback_strategy": "degrade_quality",
+      "validation_prompt": "Does this video clip show natural motion consistent with the source image? Answer with a score from 1-10 and brief feedback.",
+      "status": "failed",
+      "output_path": null,
+      "quality_score": 0.0
+    },
+    {
+      "task_id": "gen_anim_003",
+      "task_type": "image_to_video",
+      "description": "Animate hero_front.png based on intent",
+      "inputs": {
+        "image": "assets/hero_front.png",
+        "prompt": "Create a 45-second premium product showcase video for the \"AuraSound Pro\" wireless noise-cancelling headphones ($349). Style: cinematic, dark background, smooth professional motion. Scene flow: 1. (0-",
+        "duration_seconds": 3.0
+      },
+      "model_options": [
+        "kling2-i2v",
+        "wan2.1-i2v",
+        "ltx-video-t2v"
+      ],
+      "quality_requirement": "final",
+      "output_ref": "gen_anim_003_output",
+      "fallback_strategy": "degrade_quality",
+      "validation_prompt": "Does this video clip show natural motion consistent with the source image? Answer with a score from 1-10 and brief feedback.",
+      "status": "failed",
+      "output_path": null,
+      "quality_score": 0.0
+    }
+  ],
+  "warnings": [
+    "_mock: true — generated without LLM. Review before production use."
+  ],
+  "assumptions": [
+    "Fps set to 30 fps (default)"
+  ],
+  "_mock": true,
+  "_run_id": "run_20260326_002"
+}

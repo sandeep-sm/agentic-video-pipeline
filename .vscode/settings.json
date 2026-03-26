@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^python -m py_compile scripts/utils\\.py scripts/stage1_asset_analyzer\\.py scripts/stage2_intent_clarifier\\.py scripts/stage3_task_planner\\.py scripts/stage4_cost_estimator\\.py scripts/stage4_router\\.py scripts/stage4_executor\\.py scripts/stage5_compositor\\.py scripts/stage6_qa\\.py scripts/pipeline\\.py && echo \"All files compiled OK\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

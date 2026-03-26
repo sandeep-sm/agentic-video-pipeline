@@ -1,0 +1,155 @@
+{
+  "analyzed_at": "2026-03-26T22:56:40Z",
+  "vlm_model": "gemini-vision",
+  "assets": {
+    "end_card_bg.png": {
+      "file_type": "image",
+      "dimensions": [
+        512,
+        512
+      ],
+      "subject_matter": "Mock subject — no VLM key available",
+      "background": "unknown",
+      "style": "unknown",
+      "dominant_colors": [
+        "#000000"
+      ],
+      "notable_features": "Mock analysis",
+      "suggested_use": "unknown",
+      "confidence": 0.5,
+      "_mock": true
+    },
+    "hero_angle.png": {
+      "file_type": "image",
+      "dimensions": [
+        512,
+        512
+      ],
+      "subject_matter": "Mock subject — no VLM key available",
+      "background": "unknown",
+      "style": "unknown",
+      "dominant_colors": [
+        "#000000"
+      ],
+      "notable_features": "Mock analysis",
+      "suggested_use": "unknown",
+      "confidence": 0.5,
+      "_mock": true
+    },
+    "hero_front.png": {
+      "file_type": "image",
+      "dimensions": [
+        512,
+        512
+      ],
+      "subject_matter": "Mock subject — no VLM key available",
+      "background": "unknown",
+      "style": "unknown",
+      "dominant_colors": [
+        "#000000"
+      ],
+      "notable_features": "Mock analysis",
+      "suggested_use": "unknown",
+      "confidence": 0.5,
+      "_mock": true
+    },
+    "hero_side.png": {
+      "file_type": "image",
+      "dimensions": [
+        512,
+        512
+      ],
+      "subject_matter": "Mock subject — no VLM key available",
+      "background": "unknown",
+      "style": "unknown",
+      "dominant_colors": [
+        "#000000"
+      ],
+      "notable_features": "Mock analysis",
+      "suggested_use": "unknown",
+      "confidence": 0.5,
+      "_mock": true
+    },
+    "lifestyle.png": {
+      "file_type": "image",
+      "dimensions": [
+        512,
+        512
+      ],
+      "subject_matter": "Mock subject — no VLM key available",
+      "background": "unknown",
+      "style": "unknown",
+      "dominant_colors": [
+        "#000000"
+      ],
+      "notable_features": "Mock analysis",
+      "suggested_use": "unknown",
+      "confidence": 0.5,
+      "_mock": true
+    },
+    "logo.png": {
+      "file_type": "image",
+      "dimensions": [
+        512,
+        512
+      ],
+      "subject_matter": "Mock subject — no VLM key available",
+      "background": "unknown",
+      "style": "unknown",
+      "dominant_colors": [
+        "#000000"
+      ],
+      "notable_features": "Mock analysis",
+      "suggested_use": "unknown",
+      "confidence": 0.5,
+      "_mock": true
+    },
+    "soundwave_bg.png": {
+      "file_type": "image",
+      "dimensions": [
+        512,
+        512
+      ],
+      "subject_matter": "Mock subject — no VLM key available",
+      "background": "unknown",
+      "style": "unknown",
+      "dominant_colors": [
+        "#000000"
+      ],
+      "notable_features": "Mock analysis",
+      "suggested_use": "unknown",
+      "confidence": 0.5,
+      "_mock": true
+    }
+  },
+  "flags": [
+    {
+      "file": "end_card_bg.png",
+      "reason": "File is 0 bytes or cannot be opened — possible corruption"
+    },
+    {
+      "file": "hero_angle.png",
+      "reason": "File is 0 bytes or cannot be opened — possible corruption"
+    },
+    {
+      "file": "hero_front.png",
+      "reason": "File is 0 bytes or cannot be opened — possible corruption"
+    },
+    {
+      "file": "hero_side.png",
+      "reason": "File is 0 bytes or cannot be opened — possible corruption"
+    },
+    {
+      "file": "lifestyle.png",
+      "reason": "File is 0 bytes or cannot be opened — possible corruption"
+    },
+    {
+      "file": "logo.png",
+      "reason": "File is 0 bytes or cannot be opened — possible corruption"
+    },
+    {
+      "file": "soundwave_bg.png",
+      "reason": "File is 0 bytes or cannot be opened — possible corruption"
+    }
+  ]
+}

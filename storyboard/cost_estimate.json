@@ -1,0 +1,68 @@
+{
+  "run_id": "run_20260326_002",
+  "budget_mode": "economy",
+  "budget_cap_usd": 10.0,
+  "estimates": {
+    "minimum_usd": 0.0,
+    "expected_usd": 1.56,
+    "maximum_usd": 1.68
+  },
+  "breakdown": [
+    {
+      "task_id": "gen_anim_001",
+      "task_type": "image_to_video",
+      "primary_model": "kling2-i2v",
+      "primary_cost_usd": 0.42,
+      "fallback_model": "wan2.1-i2v",
+      "fallback_cost_usd": 0.0,
+      "note": "3.0s clip at $0.14/sec"
+    },
+    {
+      "task_id": "gen_anim_002",
+      "task_type": "image_to_video",
+      "primary_model": "kling2-i2v",
+      "primary_cost_usd": 0.42,
+      "fallback_model": "wan2.1-i2v",
+      "fallback_cost_usd": 0.0,
+      "note": "3.0s clip at $0.14/sec"
+    },
+    {
+      "task_id": "gen_anim_003",
+      "task_type": "image_to_video",
+      "primary_model": "kling2-i2v",
+      "primary_cost_usd": 0.42,
+      "fallback_model": "wan2.1-i2v",
+      "fallback_cost_usd": 0.0,
+      "note": "3.0s clip at $0.14/sec"
+    },
+    {
+      "task_id": "vlm_gates",
+      "task_type": "vlm_quality_gates",
+      "primary_model": "gemini-vision",
+      "primary_cost_usd": 0.06,
+      "fallback_model": "none",
+      "fallback_cost_usd": 0.0,
+      "note": "6 VLM quality checks at $0.01/check"
+    },
+    {
+      "task_id": "task_planning",
+      "task_type": "llm_orchestration",
+      "primary_model": "claude-opus",
+      "primary_cost_usd": 0.2,
+      "fallback_model": "none",
+      "fallback_cost_usd": 0.0,
+      "note": "LLM task planning (Claude Opus, ~3k in / 2k out)"
+    },
+    {
+      "task_id": "asset_analysis",
+      "task_type": "llm_orchestration",
+      "primary_model": "claude-vision / gemini-vision",
+      "primary_cost_usd": 0.04,
+      "fallback_model": "none",
+      "fallback_cost_usd": 0.0,
+      "note": "VLM asset analysis (per 6 assets, ~5k tokens)"
+    }
+  ],
+  "within_budget": true,
+  "warnings": []
+}

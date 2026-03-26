@@ -1,0 +1,98 @@
+{
+  "version": "1.0",
+  "video_params": {
+    "resolution": [
+      1920,
+      1080
+    ],
+    "fps": 30,
+    "total_duration_seconds": 9.0
+  },
+  "timeline": [
+    {
+      "layer_id": "layer_001",
+      "task_ref": "gen_anim_001",
+      "asset_type": "video",
+      "start_time": 0.0,
+      "end_time": 3.0,
+      "position": {
+        "x": 960,
+        "y": 540
+      },
+      "scale": 1.0,
+      "opacity_curve": [
+        {
+          "t": 0.0,
+          "v": 0.0
+        },
+        {
+          "t": 0.5,
+          "v": 1.0
+        },
+        {
+          "t": 1.0,
+          "v": 1.0
+        }
+      ],
+      "motion": null,
+      "text": null
+    },
+    {
+      "layer_id": "layer_002",
+      "task_ref": "gen_anim_002",
+      "asset_type": "video",
+      "start_time": 3.0,
+      "end_time": 6.0,
+      "position": {
+        "x": 960,
+        "y": 540
+      },
+      "scale": 1.0,
+      "opacity_curve": [
+        {
+          "t": 0.0,
+          "v": 0.0
+        },
+        {
+          "t": 0.5,
+          "v": 1.0
+        },
+        {
+          "t": 1.0,
+          "v": 1.0
+        }
+      ],
+      "motion": null,
+      "text": null
+    },
+    {
+      "layer_id": "layer_003",
+      "task_ref": "gen_anim_003",
+      "asset_type": "video",
+      "start_time": 6.0,
+      "end_time": 9.0,
+      "position": {
+        "x": 960,
+        "y": 540
+      },
+      "scale": 1.0,
+      "opacity_curve": [
+        {
+          "t": 0.0,
+          "v": 0.0
+        },
+        {
+          "t": 0.5,
+          "v": 1.0
+        },
+        {
+          "t": 1.0,
+          "v": 1.0
+        }
+      ],
+      "motion": null,
+      "text": null
+    }
+  ],
+  "_mock": true
+}

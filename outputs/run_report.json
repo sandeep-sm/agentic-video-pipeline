@@ -1,0 +1,213 @@
+{
+  "run_id": "run_20260326_002",
+  "intent": "Create a 45-second premium product showcase video for the \"AuraSound Pro\" wireless noise-cancelling headphones ($349). Style: cinematic, dark background, smooth professional motion. Scene flow: 1. (0-3s) Fade in AuraSound logo with tagline \"Sound. Redefined.\" on black. 2. (3-10s) Hero reveal: hero_front.png emerges from darkness with slow rotation effect. 3. (10-18s) Feature callout: transition to hero_side.png angle, fly in \"Adaptive ANC\" text from right, show soundwave_bg.png as background element. 4. (18-26s) Battery feature: hero_angle.png front view, animate \"40-Hour Battery\" with a filling progress bar, subtitle \"10 min charge = 5 hours\". 5. (26-34s) Lifestyle scene: animate lifestyle.png with subtle Ken Burns zoom. 6. (34-40s) Price reveal: product returns center, \"$349\" counter animate, \"Available Now\". 7. (40-45s) End card: logo, aurasound.com, fade to black. Text overlays: white Arial Bold on dark. All transitions use smooth easing. Resolution 1920x1080, 30fps.",
+  "budget_mode": "economy",
+  "total_cost_actual_usd": 0.0,
+  "duration_seconds": 0.1,
+  "stages": {
+    "stage1": {
+      "status": "complete",
+      "model": "gemini-vision",
+      "output": "assets/descriptions.json",
+      "asset_count": 7,
+      "flags": [
+        {
+          "file": "end_card_bg.png",
+          "reason": "File is 0 bytes or cannot be opened — possible corruption"
+        },
+        {
+          "file": "hero_angle.png",
+          "reason": "File is 0 bytes or cannot be opened — possible corruption"
+        },
+        {
+          "file": "hero_front.png",
+          "reason": "File is 0 bytes or cannot be opened — possible corruption"
+        },
+        {
+          "file": "hero_side.png",
+          "reason": "File is 0 bytes or cannot be opened — possible corruption"
+        },
+        {
+          "file": "lifestyle.png",
+          "reason": "File is 0 bytes or cannot be opened — possible corruption"
+        },
+        {
+          "file": "logo.png",
+          "reason": "File is 0 bytes or cannot be opened — possible corruption"
+        },
+        {
+          "file": "soundwave_bg.png",
+          "reason": "File is 0 bytes or cannot be opened — possible corruption"
+        }
+      ]
+    },
+    "stage2": {
+      "status": "complete",
+      "ambiguities": 1,
+      "assumptions": [
+        "Fps set to 30 fps (default)"
+      ]
+    },
+    "stage3": {
+      "status": "complete",
+      "output": "storyboard/task_graph.json",
+      "task_count": 3,
+      "warnings": [
+        "_mock: true — generated without LLM. Review before production use."
+      ]
+    },
+    "stage5": {
+      "status": "failed",
+      "error": "moviepy is required for compositing. Install it with:\n  pip install moviepy>=1.0.3\nAlso ensure ffmpeg is available in your PATH."
+    },
+    "stage4": {
+      "tasks": [
+        {
+          "task_id": "gen_anim_001",
+          "model_used": "none",
+          "quality_score": 0.0,
+          "cost_usd": 0.0,
+          "success": false,
+          "output_path": null
+        },
+        {
+          "task_id": "gen_anim_001",
+          "model_used": "none",
+          "quality_score": 0.0,
+          "cost_usd": 0.0,
+          "success": false,
+          "output_path": null
+        },
+        {
+          "task_id": "gen_anim_002",
+          "model_used": "none",
+          "quality_score": 0.0,
+          "cost_usd": 0.0,
+          "success": false,
+          "output_path": null
+        },
+        {
+          "task_id": "gen_anim_002",
+          "model_used": "none",
+          "quality_score": 0.0,
+          "cost_usd": 0.0,
+          "success": false,
+          "output_path": null
+        },
+        {
+          "task_id": "gen_anim_003",
+          "model_used": "none",
+          "quality_score": 0.0,
+          "cost_usd": 0.0,
+          "success": false,
+          "output_path": null
+        },
+        {
+          "task_id": "gen_anim_003",
+          "model_used": "none",
+          "quality_score": 0.0,
+          "cost_usd": 0.0,
+          "success": false,
+          "output_path": null
+        }
+      ]
+    },
+    "stage6": {
+      "status": "failed",
+      "qa_passed": false,
+      "overall_score": 0.0
+    }
+  },
+  "assumptions": [
+    "Fps set to 30 fps (default)"
+  ],
+  "warnings": [
+    "Assumption: Fps set to 30 fps (default)",
+    "_mock: true — generated without LLM. Review before production use.",
+    "Missing API keys: KLING_API_KEY"
+  ],
+  "failures": [
+    {
+      "task_id": "gen_anim_001",
+      "task_type": "image_to_video",
+      "models_attempted": [
+        "none",
+        "none"
+      ],
+      "scores": [
+        0.0,
+        0.0
+      ],
+      "error_message": "No eligible model found for this task.",
+      "suggestion": "Task 'gen_anim_001' failed VLM gate after 2 attempts. Check model availability, VRAM, or adjust task parameters."
+    },
+    {
+      "task_id": "gen_anim_002",
+      "task_type": "image_to_video",
+      "models_attempted": [
+        "none",
+        "none"
+      ],
+      "scores": [
+        0.0,
+        0.0
+      ],
+      "error_message": "No eligible model found for this task.",
+      "suggestion": "Task 'gen_anim_002' failed VLM gate after 2 attempts. Check model availability, VRAM, or adjust task parameters."
+    },
+    {
+      "task_id": "gen_anim_003",
+      "task_type": "image_to_video",
+      "models_attempted": [
+        "none",
+        "none"
+      ],
+      "scores": [
+        0.0,
+        0.0
+      ],
+      "error_message": "No eligible model found for this task.",
+      "suggestion": "Task 'gen_anim_003' failed VLM gate after 2 attempts. Check model availability, VRAM, or adjust task parameters."
+    },
+    {
+      "task_id": "stage5_compositor",
+      "error_message": "moviepy is required for compositing. Install it with:\n  pip install moviepy>=1.0.3\nAlso ensure ffmpeg is available in your PATH.",
+      "suggestion": "Check moviepy installation and ffmpeg availability."
+    },
+    {
+      "task_id": "stage6_qa",
+      "error_message": "Could not read video metadata (no moviepy or cv2 available).",
+      "suggestion": ""
+    },
+    {
+      "task_id": "stage6_qa",
+      "error_message": "Could not extract frame at 0% (0.00s)",
+      "suggestion": ""
+    },
+    {
+      "task_id": "stage6_qa",
+      "error_message": "Could not extract frame at 25% (2.25s)",
+      "suggestion": ""
+    },
+    {
+      "task_id": "stage6_qa",
+      "error_message": "Could not extract frame at 50% (4.50s)",
+      "suggestion": ""
+    },
+    {
+      "task_id": "stage6_qa",
+      "error_message": "Could not extract frame at 75% (6.75s)",
+      "suggestion": ""
+    },
+    {
+      "task_id": "stage6_qa",
+      "error_message": "Could not extract frame at 100% (9.00s)",
+      "suggestion": ""
+    },
+    {
+      "task_id": "stage6_qa",
+      "error_message": "Overall VLM score 0.0/10 is below threshold (5.0).",
+      "suggestion": ""
+    }
+  ]
+}

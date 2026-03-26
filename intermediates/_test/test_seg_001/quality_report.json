@@ -1,0 +1,10 @@
+{
+  "score": 7.0,
+  "passed": true,
+  "feedback": "[MOCK] Output file exists and has non-zero size. No real VLM key available.",
+  "dimensions": {
+    "visual_quality": 7.0,
+    "intent_match": 7.0
+  },
+  "_mock": true
+}
