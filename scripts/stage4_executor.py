@@ -182,7 +182,7 @@ def run_vlm_quality_gate(
 
                 client = genai.Client(api_key=google_key)
                 img = PILImage.open(output_path)
-                response = client.models.generate_content(model="gemini-3.0-flash", contents=[img, system_prompt])
+                response = client.models.generate_content(model="gemini-3-flash-preview", contents=[img, system_prompt])
                 sc, fb, dims = _parse_score_response(response.text)
                 return {
                     "score": sc,
@@ -351,7 +351,7 @@ def _call_llm_for_code(
             from google import genai  # noqa: PLC0415
             client = genai.Client(api_key=google_key)
             resp = client.models.generate_content(
-                model="gemini-3.0-flash",
+                model="gemini-3.1-pro-preview",
                 contents=prompt,
                 config={"system_instruction": _CODE_GEN_SYSTEM_PROMPT},
             )

@@ -138,7 +138,7 @@ def _vlm_score_frame(frame_path: Path, intent: str, vlm_model: str) -> dict:
 
             client = genai.Client(api_key=google_key)
             img = PILImage.open(frame_path)
-            response = client.models.generate_content(model="gemini-3.0-flash", contents=[img, prompt])
+            response = client.models.generate_content(model="gemini-3-flash-preview", contents=[img, prompt])
             return _parse(response.text)
         except Exception as exc:
             logger.warning("Gemini frame score failed: %s — mock.", exc)

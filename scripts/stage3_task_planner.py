@@ -55,7 +55,7 @@ def _call_llm(prompt: str, model_id: str = "claude-opus") -> dict:
             from google import genai  # noqa: PLC0415
 
             client = genai.Client(api_key=google_key)
-            response = client.models.generate_content(model="gemini-3.0-flash", contents=prompt)
+            response = client.models.generate_content(model="gemini-3.1-pro-preview", contents=prompt)
             return {"result": response.text, "_mock": False}
         except Exception as exc:
             logger.warning("Gemini LLM call failed: %s — falling back to mock", exc)
