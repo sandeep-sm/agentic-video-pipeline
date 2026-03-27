@@ -90,11 +90,11 @@
 
     {
       "model_id": "wan2.2-t2v",
-      "display_name": "WAN 2.2 (Text-to-Video, Local)",
+      "display_name": "WAN 2.2 T2V-A14B (Text-to-Video, Local)",
       "category": "text_to_video",
       "access": "local",
       "source": "huggingface",
-      "hf_repo": "Wan-Video/Wan2.2-T2V-14B",
+      "hf_repo": "Wan-AI/Wan2.2-T2V-A14B",
       "cost_per_call": 0.0,
       "avg_latency_seconds": 120,
       "vram_required_gb": 16,
@@ -104,7 +104,7 @@
       "strengths": ["free", "no_watermark", "open_source", "improved_over_2.1", "higher_resolution"],
       "weaknesses": ["slow", "needs_16gb_vram"],
       "watermark": false,
-      "notes": "Wan2.2 T2V — improved quality and motion over Wan2.1. Use diffusers WanPipeline."
+      "notes": "Wan2.2 T2V-A14B — official Wan-AI release. Uses wan Python package (not diffusers)."
     },
 
     // ─── VIDEO GENERATION: IMAGE-TO-VIDEO ────────────────────────────────────
@@ -164,11 +164,11 @@
 
     {
       "model_id": "wan2.2-i2v",
-      "display_name": "WAN 2.2 (Image-to-Video, Local)",
+      "display_name": "WAN 2.2 I2V-A14B (Image-to-Video, Local)",
       "category": "image_to_video",
       "access": "local",
       "source": "huggingface",
-      "hf_repo": "Wan-Video/Wan2.2-I2V-14B",
+      "hf_repo": "Wan-AI/Wan2.2-I2V-A14B",
       "cost_per_call": 0.0,
       "avg_latency_seconds": 90,
       "vram_required_gb": 16,
@@ -178,7 +178,45 @@
       "strengths": ["free", "open_source", "no_watermark", "improved_subject_consistency", "higher_fps_than_2.1"],
       "weaknesses": ["slow", "needs_16gb_vram"],
       "watermark": false,
-      "notes": "Wan2.2 I2V — better motion quality and longer clips than 2.1. Use diffusers WanImageToVideoPipeline."
+      "notes": "Wan2.2 I2V-A14B — official Wan-AI release. Uses wan Python package (not diffusers)."
+    },
+
+    {
+      "model_id": "wan2.2-s2v",
+      "display_name": "WAN 2.2 S2V-14B (Subject-to-Video, Local)",
+      "category": "image_to_video",
+      "access": "local",
+      "source": "huggingface",
+      "hf_repo": "Wan-AI/Wan2.2-S2V-14B",
+      "cost_per_call": 0.0,
+      "avg_latency_seconds": 90,
+      "vram_required_gb": 16,
+      "input_format": { "type": "image", "accepted_formats": ["jpg", "png"], "max_resolution": "1280x720" },
+      "output_format": { "type": "video", "format": "mp4", "typical_fps": 24, "max_duration_seconds": 6 },
+      "quality_tier": 3,
+      "strengths": ["free", "open_source", "no_watermark", "strong_subject_preservation"],
+      "weaknesses": ["slow", "needs_16gb_vram"],
+      "watermark": false,
+      "notes": "Wan2.2 S2V-14B — Subject-to-Video, strong at keeping subject identity consistent. Uses wan Python package."
+    },
+
+    {
+      "model_id": "wan2.2-animate",
+      "display_name": "WAN 2.2 Animate-14B (Video-to-Video, Local)",
+      "category": "video_to_video",
+      "access": "local",
+      "source": "huggingface",
+      "hf_repo": "Wan-AI/Wan2.2-Animate-14B",
+      "cost_per_call": 0.0,
+      "avg_latency_seconds": 120,
+      "vram_required_gb": 16,
+      "input_format": { "type": "video", "accepted_formats": ["mp4", "webm"], "max_resolution": "1280x720" },
+      "output_format": { "type": "video", "format": "mp4", "typical_fps": 24, "max_duration_seconds": 6 },
+      "quality_tier": 3,
+      "strengths": ["free", "open_source", "no_watermark", "style_transfer", "motion_retargeting"],
+      "weaknesses": ["slow", "needs_16gb_vram"],
+      "watermark": false,
+      "notes": "Wan2.2 Animate-14B — Video-to-Video transformation. Uses wan Python package."
     },
 
     {

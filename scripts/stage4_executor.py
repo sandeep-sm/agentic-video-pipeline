@@ -331,8 +331,9 @@ def _find_source_image_path(task_node: dict) -> Path | None:
     return None
 
 
-_WAN_I2V_MODELS = {"wan2.2-ti2v-5b", "wan2.2-i2v", "wan2.1-i2v"}
+_WAN_I2V_MODELS = {"wan2.2-ti2v-5b", "wan2.2-i2v", "wan2.2-s2v", "wan2.1-i2v"}
 _WAN_T2V_MODELS = {"wan2.2-t2v", "wan2.1-t2v", "ltx-video-t2v"}
+_WAN_V2V_MODELS = {"wan2.2-animate"}
 _FLUX_MODELS = {"flux2-klein", "flux1-dev"}
 
 
@@ -382,6 +383,39 @@ def _execute_text_to_video(task_node: dict, model: dict, output_dir: Path) -> Pa
         logger.warning("[wan_t2v] Local inference failed for '%s'; falling back.", task_node.get("task_id", "?"))
     else:
         logger.info("[stub] text_to_video → %s (model=%s)", out, model_id)
+
+    _write_placeholder_mp4(out, duration)
+    return out
+
+
+def _execute_video_to_video(task_node: dict, model: dict, output_dir: Path) -> Path:
+    out = output_dir / "output.mp4"
+    inputs = task_node.get("inputs", {}) or {}
+    duration = float(inputs.get("duration_seconds", 3.0))
+    model_id = model.get("model_id", "")
+
+    # Resolve source video from task inputs
+    source_video: Path | None = None
+    source_ref = inputs.get("source_video") or inputs.get("video") or inputs.get("source")
+    if source_ref:
+        p = Path(str(source_ref))
+        if p.exists():
+            source_video = p
+
+    if model_id in _WAN_V2V_MODELS:
+        from scripts.local_models import run_wan_v2v  # noqa: PLC0415
+        logger.info("[wan_v2v] video_to_video → %s (model=%s)", out, model_id)
+        result = run_wan_v2v(task_node, model, output_dir, source_video)
+        if result:
+            return result
+        logger.warning("[wan_v2v] Local inference failed for '%s'; using placeholder.", task_node.get("task_id", "?"))
+    else:
+        logger.info("[stub] video_to_video → %s (model=%s)", out, model_id)
+
+    if source_video and source_video.exists():
+        import shutil
+        shutil.copy2(str(source_video), str(out))
+        return out
 
     _write_placeholder_mp4(out, duration)
     return out
@@ -677,6 +711,7 @@ def _execute_composite(
 _DISPATCH: dict[str, Any] = {
     "image_to_video": _execute_image_to_video,
     "text_to_video": _execute_text_to_video,
+    "video_to_video": _execute_video_to_video,
     "image_segmentation": _execute_image_segmentation,
     "video_segmentation": _execute_video_segmentation,
     "text_to_image": _execute_text_to_image,

@@ -223,78 +223,187 @@ def run_wan_t2v(
     out = output_dir / "output.mp4"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # ── Try diffusers ──────────────────────────────────────────────────────
-    try:
-        import torch
-        from diffusers import WanPipeline
-        from diffusers.utils import export_to_video
+    # Wan-AI/ repos are not in diffusers format — use wan package first.
+    use_wan_pkg_first = hf_repo.startswith("Wan-AI/")
 
-        if hf_repo not in _wan_t2v_cache:
-            logger.info("[wan_t2v] Loading WanPipeline from %s …", hf_repo)
-            pipe = WanPipeline.from_pretrained(hf_repo, torch_dtype=torch.bfloat16)
-            pipe.enable_model_cpu_offload()
-            _wan_t2v_cache[hf_repo] = pipe
+    def _try_wan_package_t2v() -> "Path | None":
+        try:
+            import torch
+            import numpy as np
+            import wan
+            from wan.configs import WAN_CONFIGS
 
-        pipe = _wan_t2v_cache[hf_repo]
-        logger.info("[wan_t2v] Generating %d frames (%.1fs @ %d fps) …", num_frames, duration, fps_out)
-        result = pipe(
-            prompt=prompt,
-            negative_prompt=negative_prompt,
-            num_frames=num_frames,
-            guidance_scale=5.0,
-            num_inference_steps=30,
-        )
-        export_to_video(result.frames[0], str(out), fps=fps_out)
-        logger.info("[wan_t2v] Wrote %s", out)
-        return out
+            cache_key = f"wan_pkg_t2v_{hf_repo}"
+            if cache_key not in _wan_t2v_cache:
+                config_key = next(
+                    (k for k in WAN_CONFIGS if "t2v" in k.lower()),
+                    next(iter(WAN_CONFIGS), None),
+                )
+                if config_key is None:
+                    raise RuntimeError("No t2v config in WAN_CONFIGS")
+                logger.info("[wan_t2v] Loading wan package t2v model (config=%s, repo=%s) …", config_key, hf_repo)
+                model_obj = wan.WanT2V(
+                    config=WAN_CONFIGS[config_key],
+                    checkpoint_dir=None,
+                    device="cuda" if torch.cuda.is_available() else "cpu",
+                )
+                _wan_t2v_cache[cache_key] = model_obj
 
-    except ImportError as exc:
-        logger.warning("[wan_t2v] WanPipeline not available (diffusers too old?): %s", exc)
-    except Exception as exc:
-        logger.warning("[wan_t2v] diffusers failed: %s — trying wan package.", exc)
-        _wan_t2v_cache.pop(hf_repo, None)
+            model_obj = _wan_t2v_cache[cache_key]
+            logger.info("[wan_t2v] Generating %d frames via wan package …", num_frames)
+            frames = model_obj.generate(prompt=prompt, num_frames=num_frames)
 
-    # ── Try wan package ────────────────────────────────────────────────────
+            try:
+                import imageio
+                imageio.mimwrite(str(out), [np.array(f) for f in frames], fps=fps_out)
+            except ImportError:
+                from diffusers.utils import export_to_video  # type: ignore
+                export_to_video(frames, str(out), fps=fps_out)
+
+            logger.info("[wan_t2v] wan package wrote %s", out)
+            return out
+
+        except ImportError:
+            logger.warning("[wan_t2v] wan package not installed — pip install wan")
+            return None
+        except Exception as exc:
+            logger.warning("[wan_t2v] wan package failed: %s", exc)
+            _wan_t2v_cache.pop(f"wan_pkg_t2v_{hf_repo}", None)
+            return None
+
+    def _try_diffusers_t2v() -> "Path | None":
+        try:
+            import torch
+            from diffusers import WanPipeline
+            from diffusers.utils import export_to_video
+
+            if hf_repo not in _wan_t2v_cache:
+                logger.info("[wan_t2v] Loading WanPipeline from %s …", hf_repo)
+                pipe = WanPipeline.from_pretrained(hf_repo, torch_dtype=torch.bfloat16)
+                pipe.enable_model_cpu_offload()
+                _wan_t2v_cache[hf_repo] = pipe
+
+            pipe = _wan_t2v_cache[hf_repo]
+            logger.info("[wan_t2v] Generating %d frames via diffusers …", num_frames)
+            result = pipe(
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                num_frames=num_frames,
+                guidance_scale=5.0,
+                num_inference_steps=30,
+            )
+            export_to_video(result.frames[0], str(out), fps=fps_out)
+            logger.info("[wan_t2v] Wrote %s", out)
+            return out
+
+        except ImportError as exc:
+            logger.warning("[wan_t2v] WanPipeline not available: %s", exc)
+            return None
+        except Exception as exc:
+            logger.warning("[wan_t2v] diffusers failed: %s", exc)
+            _wan_t2v_cache.pop(hf_repo, None)
+            return None
+
+    if use_wan_pkg_first:
+        result_path = _try_wan_package_t2v()
+        if result_path is not None:
+            return result_path
+        return _try_diffusers_t2v()
+    else:
+        result_path = _try_diffusers_t2v()
+        if result_path is not None:
+            return result_path
+        return _try_wan_package_t2v()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# WAN Video-to-Video (Animate)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Cache shared with t2v (keyed differently)
+_wan_v2v_cache: dict = {}
+
+
+def run_wan_v2v(
+    task_node: dict,
+    model: dict,
+    output_dir: Path,
+    source_video: Path | None,
+) -> Path | None:
+    """
+    Run Wan2.2-Animate Video-to-Video inference.
+    Uses the wan Python package (Wan-AI/ repos are not in diffusers format).
+    Returns the output .mp4 Path on success, None on failure.
+    """
+    hf_repo = model.get("hf_repo", "Wan-AI/Wan2.2-Animate-14B")
+    inputs = task_node.get("inputs", {}) or {}
+    prompt = str(inputs.get("prompt", inputs.get("description", "high quality smooth animation")))
+    fps_out = int((model.get("output_format") or {}).get("typical_fps", 24))
+    out = output_dir / "output.mp4"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if source_video is None:
+        logger.warning("[wan_v2v] No source video for task '%s'.", task_node.get("task_id"))
+
     try:
         import torch
         import numpy as np
         import wan
         from wan.configs import WAN_CONFIGS
 
-        cache_key = f"wan_pkg_t2v_{hf_repo}"
-        if cache_key not in _wan_t2v_cache:
+        cache_key = f"wan_pkg_v2v_{hf_repo}"
+        if cache_key not in _wan_v2v_cache:
             config_key = next(
-                (k for k in WAN_CONFIGS if "t2v" in k.lower()),
-                next(iter(WAN_CONFIGS), None),
+                (k for k in WAN_CONFIGS if "animate" in k.lower() or "v2v" in k.lower()),
+                next((k for k in WAN_CONFIGS if "i2v" in k.lower()), None),
             )
             if config_key is None:
-                raise RuntimeError("No t2v config in WAN_CONFIGS")
-            logger.info("[wan_t2v] Loading wan package t2v model (config=%s) …", config_key)
-            model_obj = wan.WanT2V(
+                raise RuntimeError("No animate/v2v config in WAN_CONFIGS")
+            logger.info("[wan_v2v] Loading wan package v2v model (config=%s, repo=%s) …", config_key, hf_repo)
+            model_obj = wan.WanI2V(  # Animate shares the I2V class in wan package
                 config=WAN_CONFIGS[config_key],
+                checkpoint_dir=None,
                 device="cuda" if torch.cuda.is_available() else "cpu",
             )
-            _wan_t2v_cache[cache_key] = model_obj
+            _wan_v2v_cache[cache_key] = model_obj
 
-        model_obj = _wan_t2v_cache[cache_key]
-        logger.info("[wan_t2v] Generating via wan package …")
-        frames = model_obj.generate(prompt=prompt, num_frames=num_frames)
+        model_obj = _wan_v2v_cache[cache_key]
 
+        if source_video is None:
+            raise ValueError("source_video is required for Wan2.2-Animate")
+
+        # Extract first frame as conditioning image if the model expects image input
+        from PIL import Image as PILImage  # noqa: PLC0415
         try:
             import imageio
+            reader = imageio.get_reader(str(source_video))
+            first_frame = PILImage.fromarray(reader.get_data(0)).convert("RGB")
+            reader.close()
+        except Exception:
+            # Fallback: use ffmpeg via moviepy to grab frame 0
+            import moviepy as mpy  # noqa: PLC0415
+            vc = mpy.VideoFileClip(str(source_video))
+            arr = vc.get_frame(0)
+            first_frame = PILImage.fromarray(arr).convert("RGB")
+            vc.close()
+
+        logger.info("[wan_v2v] Generating animated video via wan package …")
+        frames = model_obj.generate(prompt=prompt, image=first_frame)
+
+        try:
             imageio.mimwrite(str(out), [np.array(f) for f in frames], fps=fps_out)
-        except ImportError:
-            from diffusers.utils import export_to_video  # type: ignore
+        except Exception:
+            from diffusers.utils import export_to_video  # type: ignore  # noqa: PLC0415
             export_to_video(frames, str(out), fps=fps_out)
 
-        logger.info("[wan_t2v] wan package wrote %s", out)
+        logger.info("[wan_v2v] wan package wrote %s", out)
         return out
 
     except ImportError:
-        logger.debug("[wan_t2v] wan package not installed.")
+        logger.warning("[wan_v2v] wan package not installed — pip install wan")
     except Exception as exc:
-        logger.warning("[wan_t2v] wan package failed: %s", exc)
-        _wan_t2v_cache.pop(f"wan_pkg_t2v_{hf_repo}", None)
+        logger.warning("[wan_v2v] wan package failed: %s", exc)
+        _wan_v2v_cache.pop(f"wan_pkg_v2v_{hf_repo}", None)
 
     return None
 
