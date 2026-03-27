@@ -86,6 +86,30 @@ def _write_placeholder_mp4(output_path: Path, duration_seconds: float = 1.0) -> 
         output_path.write_bytes(b"PLACEHOLDER_MP4_STUB")
 
 
+def _write_image_motion_mp4(source_image: Path, output_path: Path, duration_seconds: float = 3.0) -> bool:
+    """Create a simple Ken Burns-style MP4 from a source image; return True on success."""
+    try:
+        from moviepy import ImageClip  # noqa: PLC0415
+
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        base = ImageClip(str(source_image)).with_duration(duration_seconds)
+        # Keep resolution consistent and add mild motion so QA doesn't see a static/black clip.
+        clip = base.resized(height=1080).resized(lambda t: 1.0 + 0.06 * (t / max(duration_seconds, 0.001)))
+        clip.write_videofile(
+            str(output_path),
+            fps=30,
+            codec="libx264",
+            audio=False,
+            logger=None,
+            ffmpeg_params=["-crf", "23"],
+        )
+        clip.close()
+        return True
+    except Exception as exc:
+        logger.warning("image motion MP4 failed (%s) — falling back to placeholder.", exc)
+        return False
+
+
 def _write_placeholder_wav(output_path: Path, duration_seconds: float = 1.0) -> None:
     """Save a 1-second silent WAV using stdlib."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -227,8 +251,27 @@ def _get_output_dir(intermediates_dir: Path, task_id: str) -> Path:
 
 def _execute_image_to_video(task_node: dict, model: dict, output_dir: Path) -> Path:
     out = output_dir / "output.mp4"
-    duration = float(task_node.get("inputs", {}).get("duration_seconds", 3.0))
+    inputs = task_node.get("inputs", {})
+    duration = float(inputs.get("duration_seconds", 3.0))
+    image_ref = str(inputs.get("image", "")).strip()
     logger.info("[stub] image_to_video → %s (model=%s)", out, model.get("model_id", "?"))
+
+    source_image: Path | None = None
+    if image_ref:
+        from scripts.utils import get_project_root  # noqa: PLC0415
+
+        root = get_project_root()
+        candidate = root / image_ref
+        if candidate.exists():
+            source_image = candidate
+        else:
+            candidate2 = root / "assets" / Path(image_ref).name
+            if candidate2.exists():
+                source_image = candidate2
+
+    if source_image and _write_image_motion_mp4(source_image, out, duration):
+        return out
+
     _write_placeholder_mp4(out, duration)
     return out
 

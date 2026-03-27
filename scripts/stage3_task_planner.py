@@ -50,7 +50,7 @@ def _call_llm(prompt: str, model_id: str = "claude-opus") -> dict:
             logger.warning("Claude LLM call failed: %s — falling back to mock", exc)
 
     # ── Gemini Pro ────────────────────────────────────────────────────────────
-    if model_id == "gemini-pro" and google_key:
+    if (model_id == "gemini-pro" or model_id.startswith("gemini")) and google_key:
         try:
             from google import genai  # noqa: PLC0415
 
@@ -435,7 +435,14 @@ RULES:
 """
 
     # ── LLM call ──────────────────────────────────────────────────────────────
-    llm_model = "claude-opus" if budget_mode in ("production", "premium") else "claude-sonnet"
+    anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    google_key = os.environ.get("GOOGLE_API_KEY", "")
+    if anthropic_key:
+        llm_model = "claude-opus" if budget_mode in ("production", "premium") else "claude-sonnet"
+    elif google_key:
+        llm_model = "gemini-pro"
+    else:
+        llm_model = "claude-sonnet"
     llm_response = _call_llm(prompt, model_id=llm_model)
 
     task_graph: dict | None = None

@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # Parameters we consider "underspecified" if absent from the intent string
 UNDERSPECIFIED_PARAMS = {
     "duration": {
-        "patterns": [r"\d+\s*(?:sec|second|s\b|min)", r"duration", r"long"],
+        "patterns": [r"\d+\s*[- ]?\s*(?:s|sec|secs|second|seconds|min|mins|minute|minutes)\b", r"duration", r"long"],
         "default": "9 seconds",
         "default_key": "duration_seconds",
         "default_value": 9.0,
