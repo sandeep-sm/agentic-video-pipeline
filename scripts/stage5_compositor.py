@@ -180,20 +180,20 @@ def compose_video(
             color = (text_spec or {}).get("color", "white")
             try:
                 clip = mpy.TextClip(
-                    text_content,
-                    fontsize=font_size,
+                    text=text_content,
+                    font_size=font_size,
                     font=font,
                     color=color,
-                ).set_duration(clip_duration)
+                ).with_duration(clip_duration)
             except Exception as exc:
                 logger.warning("TextClip failed with font '%s': %s — trying DejaVu Sans Bold.", font, exc)
                 try:
                     clip = mpy.TextClip(
-                        text_content,
-                        fontsize=font_size,
+                        text=text_content,
+                        font_size=font_size,
                         font="DejaVu-Sans-Bold",
                         color=color,
-                    ).set_duration(clip_duration)
+                    ).with_duration(clip_duration)
                 except Exception as exc2:
                     logger.error("TextClip failed entirely: %s — skipping layer '%s'.", exc2, layer_id)
                     continue
@@ -208,17 +208,17 @@ def compose_video(
             try:
                 if asset_type == "audio":
                     audio_clip = mpy.AudioFileClip(str(asset_path))
-                    audio_clip = audio_clip.set_start(start_time)
+                    audio_clip = audio_clip.with_start(start_time)
                     audio_clips.append(audio_clip)
                     continue
                 elif asset_type == "video":
                     clip = mpy.VideoFileClip(str(asset_path), audio=False)
                     if draft_mode:
-                        clip = clip.resize(scale)
+                        clip = clip.resized(scale)
                 elif asset_type == "image":
-                    clip = mpy.ImageClip(str(asset_path)).set_duration(clip_duration)
+                    clip = mpy.ImageClip(str(asset_path)).with_duration(clip_duration)
                     if draft_mode:
-                        clip = clip.resize(scale)
+                        clip = clip.resized(scale)
                 else:
                     logger.warning("Unknown asset_type '%s' for layer '%s' — skipping.", asset_type, layer_id)
                     continue
@@ -231,9 +231,9 @@ def compose_video(
 
         # ── Trim to layer duration ─────────────────────────────────────────────
         if clip.duration and clip.duration > clip_duration:
-            clip = clip.subclip(0, clip_duration)
+            clip = clip.subclipped(0, clip_duration)
         elif clip.duration and clip.duration < clip_duration:
-            clip = clip.loop(duration=clip_duration)
+            clip = clip.looped(duration=clip_duration)
 
         # ── Opacity / fade (via fl_image + opacity_curve) ─────────────────────
         def _make_opacity_filter(curve, dur):
@@ -250,7 +250,7 @@ def compose_video(
             return filter_fn
 
         try:
-            clip = clip.fl_image(
+            clip = clip.image_transform(
                 lambda img, t=0, curve=opacity_curve, dur=clip_duration: _make_opacity_filter(curve, dur)(img, t),
             )
         except Exception:
@@ -269,19 +269,19 @@ def compose_video(
                 motion_start - start_time,
                 motion_end - start_time,
             )
-            clip = clip.set_position(pos_fn)
+            clip = clip.with_position(pos_fn)
         else:
             px = int(position.get("x", render_w // 2) * scale_factor)
             py = int(position.get("y", render_h // 2) * scale_factor)
             # Center anchor
             try:
                 w, h = clip.size
-                clip = clip.set_position((px - w // 2, py - h // 2))
+                clip = clip.with_position((px - w // 2, py - h // 2))
             except Exception:
-                clip = clip.set_position((px, py))
+                clip = clip.with_position((px, py))
 
         # ── Timing ────────────────────────────────────────────────────────────
-        clip = clip.set_start(start_time)
+        clip = clip.with_start(start_time)
         clips.append(clip)
 
     # ── Composite ─────────────────────────────────────────────────────────────
@@ -291,7 +291,7 @@ def compose_video(
     if audio_clips:
         try:
             combined_audio = mpy.CompositeAudioClip(audio_clips)
-            final = final.set_audio(combined_audio)
+            final = final.with_audio(combined_audio)
         except Exception as exc:
             logger.warning("Audio compositing failed: %s — output will be silent.", exc)
 

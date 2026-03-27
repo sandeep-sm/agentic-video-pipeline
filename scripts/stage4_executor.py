@@ -437,11 +437,11 @@ def _fallback_code_gen_placeholder(task_node: dict, output_path: Path) -> None:
         bg = ColorClip(size=(1920, 1080), color=[20, 20, 20], duration=duration)
         try:
             txt = TextClip(
-                f"[code_gen placeholder]\n{desc}",
-                fontsize=40,
+                text=f"[code_gen placeholder]\n{desc}",
+                font_size=40,
                 color="white",
                 font="Arial-Bold",
-            ).set_position("center").set_duration(duration)
+            ).with_position("center").with_duration(duration)
             clip = CompositeVideoClip([bg, txt])
         except Exception:
             clip = bg
