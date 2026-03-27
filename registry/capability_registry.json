@@ -144,6 +144,25 @@
     },
 
     {
+      "model_id": "wan2.2-ti2v-5b",
+      "display_name": "WAN 2.2 TI2V-5B (Text+Image-to-Video, Local)",
+      "category": "image_to_video",
+      "access": "local",
+      "source": "huggingface",
+      "hf_repo": "Wan-AI/Wan2.2-TI2V-5B",
+      "cost_per_call": 0.0,
+      "avg_latency_seconds": 45,
+      "vram_required_gb": 8,
+      "input_format": { "type": "image+text", "accepted_formats": ["jpg", "png"], "max_resolution": "832x480" },
+      "output_format": { "type": "video", "format": "mp4", "typical_fps": 16, "max_duration_seconds": 5 },
+      "quality_tier": 3,
+      "strengths": ["free", "open_source", "no_watermark", "fast", "low_vram", "text_guided_motion"],
+      "weaknesses": ["smaller_capacity_than_14B"],
+      "watermark": false,
+      "notes": "Wan2.2 TI2V 5B — smaller/faster variant, uses wan Python package (not diffusers). Primary preferred local I2V model."
+    },
+
+    {
       "model_id": "wan2.2-i2v",
       "display_name": "WAN 2.2 (Image-to-Video, Local)",
       "category": "image_to_video",

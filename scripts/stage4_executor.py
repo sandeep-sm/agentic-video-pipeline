@@ -331,7 +331,7 @@ def _find_source_image_path(task_node: dict) -> Path | None:
     return None
 
 
-_WAN_I2V_MODELS = {"wan2.2-i2v", "wan2.1-i2v"}
+_WAN_I2V_MODELS = {"wan2.2-ti2v-5b", "wan2.2-i2v", "wan2.1-i2v"}
 _WAN_T2V_MODELS = {"wan2.2-t2v", "wan2.1-t2v", "ltx-video-t2v"}
 _FLUX_MODELS = {"flux2-klein", "flux1-dev"}
 

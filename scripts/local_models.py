@@ -77,101 +77,125 @@ def run_wan_i2v(
     if source_image is None:
         logger.warning("[wan_i2v] No source image found for task '%s'.", task_node.get("task_id"))
 
-    # ── Try diffusers ──────────────────────────────────────────────────────
-    try:
-        import torch
-        from diffusers import WanImageToVideoPipeline
-        from diffusers.utils import export_to_video
-        from PIL import Image as PILImage
+    # Wan-AI/ repos are NOT in diffusers format (no model_index.json).
+    # Use the wan Python package for those; use diffusers for Wan-Video/ repos.
+    use_wan_pkg_first = hf_repo.startswith("Wan-AI/")
 
-        if hf_repo not in _wan_i2v_cache:
-            logger.info("[wan_i2v] Loading WanImageToVideoPipeline from %s …", hf_repo)
-            pipe = WanImageToVideoPipeline.from_pretrained(
-                hf_repo, torch_dtype=torch.bfloat16
-            )
-            pipe.enable_model_cpu_offload()
-            _wan_i2v_cache[hf_repo] = pipe
-
-        pipe = _wan_i2v_cache[hf_repo]
-
-        if source_image is None:
-            raise ValueError("source_image is required for WanImageToVideoPipeline")
-
-        image = PILImage.open(source_image).convert("RGB")
-        # Clamp to model max resolution (832×480 for Wan2.x 480P)
-        max_w, max_h = 832, 480
-        w, h = image.size
-        scale = min(max_w / w, max_h / h, 1.0)
-        if scale < 1.0:
-            image = image.resize((int(w * scale) & ~1, int(h * scale) & ~1), PILImage.LANCZOS)
-
-        logger.info("[wan_i2v] Generating %d frames (%.1fs @ %d fps) …", num_frames, duration, fps_out)
-        result = pipe(
-            image=image,
-            prompt=prompt,
-            negative_prompt=negative_prompt,
-            num_frames=num_frames,
-            guidance_scale=5.0,
-            num_inference_steps=30,
-        )
-        export_to_video(result.frames[0], str(out), fps=fps_out)
-        logger.info("[wan_i2v] Wrote %s", out)
-        return out
-
-    except ImportError as exc:
-        logger.warning("[wan_i2v] WanImageToVideoPipeline not available (diffusers too old?): %s", exc)
-    except Exception as exc:
-        logger.warning("[wan_i2v] diffusers pipeline failed: %s — trying wan package.", exc)
-        _wan_i2v_cache.pop(hf_repo, None)
-
-    # ── Try wan package ────────────────────────────────────────────────────
-    try:
-        import torch
-        import numpy as np
-        import wan
-        from wan.configs import WAN_CONFIGS
-        from PIL import Image as PILImage
-
-        cache_key = f"wan_pkg_i2v_{hf_repo}"
-        if cache_key not in _wan_i2v_cache:
-            config_key = next(
-                (k for k in WAN_CONFIGS if "i2v" in k.lower()),
-                next(iter(WAN_CONFIGS), None),
-            )
-            if config_key is None:
-                raise RuntimeError("No i2v config in WAN_CONFIGS")
-            logger.info("[wan_i2v] Loading wan package i2v model (config=%s) …", config_key)
-            model_obj = wan.WanI2V(
-                config=WAN_CONFIGS[config_key],
-                device="cuda" if torch.cuda.is_available() else "cpu",
-            )
-            _wan_i2v_cache[cache_key] = model_obj
-
-        model_obj = _wan_i2v_cache[cache_key]
-        if source_image is None:
-            raise ValueError("source_image required")
-
-        image = PILImage.open(source_image).convert("RGB")
-        logger.info("[wan_i2v] Generating via wan package …")
-        frames = model_obj.generate(prompt=prompt, image=image, num_frames=num_frames)
-
+    def _try_wan_package() -> "Path | None":
         try:
-            import imageio
-            imageio.mimwrite(str(out), [np.array(f) for f in frames], fps=fps_out)
+            import torch
+            import numpy as np
+            import wan
+            from wan.configs import WAN_CONFIGS
+            from PIL import Image as PILImage
+
+            cache_key = f"wan_pkg_i2v_{hf_repo}"
+            if cache_key not in _wan_i2v_cache:
+                repo_lower = hf_repo.lower()
+                # Prefer ti2v config when model is TI2V variant, else i2v
+                if "ti2v" in repo_lower:
+                    config_key = next(
+                        (k for k in WAN_CONFIGS if "ti2v" in k.lower()),
+                        next((k for k in WAN_CONFIGS if "i2v" in k.lower()), None),
+                    )
+                else:
+                    config_key = next(
+                        (k for k in WAN_CONFIGS if "i2v" in k.lower() and "ti2v" not in k.lower()),
+                        next((k for k in WAN_CONFIGS if "i2v" in k.lower()), None),
+                    )
+                if config_key is None:
+                    raise RuntimeError("No i2v/ti2v config in WAN_CONFIGS")
+                logger.info("[wan_i2v] Loading wan package model (config=%s, repo=%s) …", config_key, hf_repo)
+                model_obj = wan.WanI2V(
+                    config=WAN_CONFIGS[config_key],
+                    checkpoint_dir=None,  # auto-download from HF
+                    device="cuda" if torch.cuda.is_available() else "cpu",
+                )
+                _wan_i2v_cache[cache_key] = model_obj
+
+            model_obj = _wan_i2v_cache[cache_key]
+            if source_image is None:
+                raise ValueError("source_image required")
+
+            image = PILImage.open(source_image).convert("RGB")
+            logger.info("[wan_i2v] Generating via wan package (%d frames) …", num_frames)
+            frames = model_obj.generate(prompt=prompt, image=image, num_frames=num_frames)
+
+            try:
+                import imageio
+                imageio.mimwrite(str(out), [np.array(f) for f in frames], fps=fps_out)
+            except ImportError:
+                from diffusers.utils import export_to_video  # type: ignore
+                export_to_video(frames, str(out), fps=fps_out)
+
+            logger.info("[wan_i2v] wan package wrote %s", out)
+            return out
+
         except ImportError:
-            from diffusers.utils import export_to_video  # type: ignore
-            export_to_video(frames, str(out), fps=fps_out)
+            logger.warning("[wan_i2v] wan package not installed — pip install wan")
+            return None
+        except Exception as exc:
+            logger.warning("[wan_i2v] wan package failed: %s", exc)
+            _wan_i2v_cache.pop(f"wan_pkg_i2v_{hf_repo}", None)
+            return None
 
-        logger.info("[wan_i2v] wan package wrote %s", out)
-        return out
+    def _try_diffusers() -> "Path | None":
+        try:
+            import torch
+            from diffusers import WanImageToVideoPipeline
+            from diffusers.utils import export_to_video
+            from PIL import Image as PILImage
 
-    except ImportError:
-        logger.debug("[wan_i2v] wan package not installed.")
-    except Exception as exc:
-        logger.warning("[wan_i2v] wan package failed: %s", exc)
-        _wan_i2v_cache.pop(f"wan_pkg_i2v_{hf_repo}", None)
+            if hf_repo not in _wan_i2v_cache:
+                logger.info("[wan_i2v] Loading WanImageToVideoPipeline from %s …", hf_repo)
+                pipe = WanImageToVideoPipeline.from_pretrained(
+                    hf_repo, torch_dtype=torch.bfloat16
+                )
+                pipe.enable_model_cpu_offload()
+                _wan_i2v_cache[hf_repo] = pipe
 
-    return None
+            pipe = _wan_i2v_cache[hf_repo]
+            if source_image is None:
+                raise ValueError("source_image is required for WanImageToVideoPipeline")
+
+            image = PILImage.open(source_image).convert("RGB")
+            max_w, max_h = 832, 480
+            w, h = image.size
+            scale = min(max_w / w, max_h / h, 1.0)
+            if scale < 1.0:
+                image = image.resize((int(w * scale) & ~1, int(h * scale) & ~1), PILImage.LANCZOS)
+
+            logger.info("[wan_i2v] Generating %d frames via diffusers …", num_frames)
+            result = pipe(
+                image=image,
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                num_frames=num_frames,
+                guidance_scale=5.0,
+                num_inference_steps=30,
+            )
+            export_to_video(result.frames[0], str(out), fps=fps_out)
+            logger.info("[wan_i2v] Wrote %s", out)
+            return out
+
+        except ImportError as exc:
+            logger.warning("[wan_i2v] WanImageToVideoPipeline not available: %s", exc)
+            return None
+        except Exception as exc:
+            logger.warning("[wan_i2v] diffusers pipeline failed: %s", exc)
+            _wan_i2v_cache.pop(hf_repo, None)
+            return None
+
+    if use_wan_pkg_first:
+        result_path = _try_wan_package()
+        if result_path is not None:
+            return result_path
+        return _try_diffusers()
+    else:
+        result_path = _try_diffusers()
+        if result_path is not None:
+            return result_path
+        return _try_wan_package()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
