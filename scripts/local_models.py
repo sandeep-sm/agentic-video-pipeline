@@ -409,6 +409,251 @@ def run_wan_v2v(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# LTX-2.3 (Joint Audio-Video Generation)
+# ─────────────────────────────────────────────────────────────────────────────
+
+_ltx23_cache: dict = {}
+
+
+def _ltx23_env_ok() -> bool:
+    """Check if environment meets LTX-2.3 requirements (Python ≥ 3.12, CUDA > 12.7)."""
+    import sys
+    if sys.version_info < (3, 12):
+        logger.info("[ltx23] Python %s < 3.12 — LTX-2.3 not available.", sys.version_info[:2])
+        return False
+    if _cuda_available():
+        import torch
+        cuda_ver = torch.version.cuda or "0"
+        major, minor = (int(x) for x in cuda_ver.split(".")[:2])
+        if (major, minor) <= (12, 7):
+            logger.info("[ltx23] CUDA %s <= 12.7 — LTX-2.3 not available.", cuda_ver)
+            return False
+    return True
+
+
+def _ltx23_resolve_paths(hf_repo: str = "Lightricks/LTX-2.3") -> dict | None:
+    """
+    Resolve LTX-2.3 model file paths from HuggingFace Hub cache.
+    Downloads if not already cached. Returns dict of paths or None on failure.
+    """
+    try:
+        from huggingface_hub import hf_hub_download, snapshot_download
+
+        # Download the full model snapshot (safetensors + config)
+        cache_dir = snapshot_download(repo_id=hf_repo)
+        cache_path = Path(cache_dir)
+
+        # Locate key files
+        def _find(pattern: str) -> str | None:
+            matches = sorted(cache_path.rglob(pattern))
+            return str(matches[0]) if matches else None
+
+        checkpoint = _find("*22b*dev*.safetensors") or _find("*22b*.safetensors")
+        distilled_lora = _find("*distilled*lora*.safetensors")
+        spatial_upscaler = _find("*spatial*upscaler*x2*.safetensors") or _find("*spatial*upscaler*.safetensors")
+        gemma_dir = None
+        # Gemma text encoder: look inside the repo or as a separate download
+        for candidate in cache_path.rglob("gemma*"):
+            if candidate.is_dir():
+                gemma_dir = str(candidate)
+                break
+
+        if checkpoint is None:
+            logger.warning("[ltx23] Could not find checkpoint .safetensors in %s", cache_dir)
+            return None
+
+        return {
+            "checkpoint_path": checkpoint,
+            "distilled_lora": distilled_lora,
+            "spatial_upscaler": spatial_upscaler,
+            "gemma_root": gemma_dir,
+            "cache_dir": cache_dir,
+        }
+    except Exception as exc:
+        logger.warning("[ltx23] Failed to resolve model paths: %s", exc)
+        return None
+
+
+def run_ltx23_t2v(
+    task_node: dict,
+    model: dict,
+    output_dir: Path,
+) -> Path | None:
+    """
+    Run LTX-2.3 Text-to-Video (with joint audio).
+    Uses ltx-pipelines TI2VidTwoStagesPipeline with distilled LoRA (8 steps).
+    Returns output .mp4 Path on success, None on failure.
+    """
+    if not _ltx23_env_ok():
+        return None
+
+    hf_repo = model.get("hf_repo", "Lightricks/LTX-2.3")
+    inputs = task_node.get("inputs", {}) or {}
+    prompt = str(inputs.get("prompt", inputs.get("description", "high quality cinematic video")))
+    duration = float(inputs.get("duration_seconds", 4.0))
+    fps_out = 25
+    # num_frames must be divisible by 8 + 1
+    num_frames = max(9, (int(duration * fps_out) // 8) * 8 + 1)
+    out = output_dir / "output.mp4"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        from ltx_pipelines.ti2vid_two_stages import TI2VidTwoStagesPipeline
+        from ltx_core.loader import LoraPathStrengthAndSDOps
+        from ltx_core.components.guiders import MultiModalGuiderParams
+
+        cache_key = f"ltx23_t2v_{hf_repo}"
+        if cache_key not in _ltx23_cache:
+            paths = _ltx23_resolve_paths(hf_repo)
+            if paths is None:
+                return None
+
+            lora_args = []
+            if paths["distilled_lora"]:
+                lora_args = [LoraPathStrengthAndSDOps(
+                    path=paths["distilled_lora"], strength=0.8, sd_ops=None
+                )]
+
+            logger.info("[ltx23] Loading TI2VidTwoStagesPipeline from %s …", hf_repo)
+            pipe = TI2VidTwoStagesPipeline(
+                checkpoint_path=paths["checkpoint_path"],
+                distilled_lora=lora_args,
+                spatial_upsampler_path=paths.get("spatial_upscaler") or "",
+                gemma_root=paths.get("gemma_root") or "",
+            )
+            _ltx23_cache[cache_key] = pipe
+
+        pipe = _ltx23_cache[cache_key]
+
+        video_guider = MultiModalGuiderParams(cfg_scale=1.0, stg_scale=0.0)
+        audio_guider = MultiModalGuiderParams(cfg_scale=1.0, stg_scale=0.0)
+
+        logger.info("[ltx23] Generating %d frames (%.1fs @ %d fps, 8 steps) with audio …", num_frames, duration, fps_out)
+        pipe(
+            prompt=prompt,
+            output_path=str(out),
+            seed=42,
+            height=512,
+            width=768,
+            num_frames=num_frames,
+            frame_rate=float(fps_out),
+            num_inference_steps=8,
+            video_guider_params=video_guider,
+            audio_guider_params=audio_guider,
+        )
+
+        if out.exists() and out.stat().st_size > 0:
+            logger.info("[ltx23] Wrote %s", out)
+            return out
+        logger.warning("[ltx23] Output file missing or empty after generation.")
+        return None
+
+    except ImportError as exc:
+        logger.warning("[ltx23] ltx-pipelines not installed: %s — pip install -e packages/ltx-pipelines from LTX-2 repo", exc)
+    except Exception as exc:
+        logger.warning("[ltx23] T2V generation failed: %s", exc)
+        _ltx23_cache.pop(f"ltx23_t2v_{hf_repo}", None)
+
+    return None
+
+
+def run_ltx23_i2v(
+    task_node: dict,
+    model: dict,
+    output_dir: Path,
+    source_image: Path | None,
+) -> Path | None:
+    """
+    Run LTX-2.3 Image-to-Video (with joint audio).
+    Uses TI2VidTwoStagesPipeline with ImageConditioningInput on frame 0.
+    Returns output .mp4 Path on success, None on failure.
+    """
+    if not _ltx23_env_ok():
+        return None
+
+    hf_repo = model.get("hf_repo", "Lightricks/LTX-2.3")
+    inputs = task_node.get("inputs", {}) or {}
+    prompt = str(inputs.get("prompt", inputs.get("description", "high quality smooth motion")))
+    duration = float(inputs.get("duration_seconds", 4.0))
+    fps_out = 25
+    num_frames = max(9, (int(duration * fps_out) // 8) * 8 + 1)
+    out = output_dir / "output.mp4"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if source_image is None:
+        logger.warning("[ltx23] No source image for I2V task '%s'.", task_node.get("task_id"))
+        return None
+
+    try:
+        from ltx_pipelines.ti2vid_two_stages import TI2VidTwoStagesPipeline
+        from ltx_core.loader import LoraPathStrengthAndSDOps
+        from ltx_core.components.guiders import MultiModalGuiderParams
+        from ltx_core.components.conditioning import ImageConditioningInput
+
+        cache_key = f"ltx23_i2v_{hf_repo}"
+        if cache_key not in _ltx23_cache:
+            paths = _ltx23_resolve_paths(hf_repo)
+            if paths is None:
+                return None
+
+            lora_args = []
+            if paths["distilled_lora"]:
+                lora_args = [LoraPathStrengthAndSDOps(
+                    path=paths["distilled_lora"], strength=0.8, sd_ops=None
+                )]
+
+            logger.info("[ltx23] Loading TI2VidTwoStagesPipeline (I2V) from %s …", hf_repo)
+            pipe = TI2VidTwoStagesPipeline(
+                checkpoint_path=paths["checkpoint_path"],
+                distilled_lora=lora_args,
+                spatial_upsampler_path=paths.get("spatial_upscaler") or "",
+                gemma_root=paths.get("gemma_root") or "",
+            )
+            _ltx23_cache[cache_key] = pipe
+
+        pipe = _ltx23_cache[cache_key]
+
+        video_guider = MultiModalGuiderParams(cfg_scale=1.0, stg_scale=0.0)
+        audio_guider = MultiModalGuiderParams(cfg_scale=1.0, stg_scale=0.0)
+
+        image_cond = [ImageConditioningInput(
+            path=str(source_image),
+            frame_index=0,
+            strength=1.0,
+            crf=33,
+        )]
+
+        logger.info("[ltx23] Generating %d frames I2V (%.1fs @ %d fps, 8 steps) with audio …", num_frames, duration, fps_out)
+        pipe(
+            prompt=prompt,
+            output_path=str(out),
+            seed=42,
+            height=512,
+            width=768,
+            num_frames=num_frames,
+            frame_rate=float(fps_out),
+            num_inference_steps=8,
+            video_guider_params=video_guider,
+            audio_guider_params=audio_guider,
+            images=image_cond,
+        )
+
+        if out.exists() and out.stat().st_size > 0:
+            logger.info("[ltx23] Wrote %s", out)
+            return out
+        logger.warning("[ltx23] Output file missing or empty after I2V generation.")
+        return None
+
+    except ImportError as exc:
+        logger.warning("[ltx23] ltx-pipelines not installed: %s", exc)
+    except Exception as exc:
+        logger.warning("[ltx23] I2V generation failed: %s", exc)
+        _ltx23_cache.pop(f"ltx23_i2v_{hf_repo}", None)
+
+    return None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # FLUX Text-to-Image
 # ─────────────────────────────────────────────────────────────────────────────
 

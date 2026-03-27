@@ -331,6 +331,7 @@ def _find_source_image_path(task_node: dict) -> Path | None:
     return None
 
 
+_LTX23_MODELS = {"ltx23-t2v", "ltx23-i2v"}
 _WAN_I2V_MODELS = {"wan2.2-ti2v-5b", "wan2.2-i2v", "wan2.2-s2v", "wan2.1-i2v"}
 _WAN_T2V_MODELS = {"wan2.2-t2v", "wan2.1-t2v", "ltx-video-t2v"}
 _WAN_V2V_MODELS = {"wan2.2-animate"}
@@ -345,13 +346,23 @@ def _execute_image_to_video(task_node: dict, model: dict, output_dir: Path) -> P
 
     source_image = _find_source_image_path(task_node)
 
-    if model_id in _WAN_I2V_MODELS:
+    # LTX-2.3 is the default — try it first for any I2V task
+    if model_id in _LTX23_MODELS or model_id in _WAN_I2V_MODELS:
+        # Always try LTX-2.3 first (it's the default, faster, has audio)
+        from scripts.local_models import run_ltx23_i2v  # noqa: PLC0415
+        logger.info("[ltx23] Trying LTX-2.3 I2V for task (model_id=%s)", model_id)
+        result = run_ltx23_i2v(task_node, model, output_dir, source_image)
+        if result:
+            return result
+        logger.info("[ltx23] LTX-2.3 not available — falling back to Wan I2V.")
+
+        # Wan fallback
         from scripts.local_models import run_wan_i2v  # noqa: PLC0415
         logger.info("[wan_i2v] image_to_video → %s (model=%s)", out, model_id)
         result = run_wan_i2v(task_node, model, output_dir, source_image)
         if result:
             return result
-        logger.warning("[wan_i2v] Local inference failed for '%s'; falling back.", task_node.get("task_id", "?"))
+        logger.warning("[wan_i2v] Local inference also failed for '%s'; falling back.", task_node.get("task_id", "?"))
 
     else:
         logger.info("[stub] image_to_video → %s (model=%s)", out, model_id)
@@ -374,13 +385,22 @@ def _execute_text_to_video(task_node: dict, model: dict, output_dir: Path) -> Pa
     duration = float(inputs.get("duration_seconds", 3.0))
     model_id = model.get("model_id", "")
 
-    if model_id in _WAN_T2V_MODELS:
+    # LTX-2.3 is the default — try it first for any T2V task
+    if model_id in _LTX23_MODELS or model_id in _WAN_T2V_MODELS:
+        from scripts.local_models import run_ltx23_t2v  # noqa: PLC0415
+        logger.info("[ltx23] Trying LTX-2.3 T2V for task (model_id=%s)", model_id)
+        result = run_ltx23_t2v(task_node, model, output_dir)
+        if result:
+            return result
+        logger.info("[ltx23] LTX-2.3 not available — falling back to Wan T2V.")
+
+        # Wan fallback
         from scripts.local_models import run_wan_t2v  # noqa: PLC0415
         logger.info("[wan_t2v] text_to_video → %s (model=%s)", out, model_id)
         result = run_wan_t2v(task_node, model, output_dir)
         if result:
             return result
-        logger.warning("[wan_t2v] Local inference failed for '%s'; falling back.", task_node.get("task_id", "?"))
+        logger.warning("[wan_t2v] Local inference also failed for '%s'; falling back.", task_node.get("task_id", "?"))
     else:
         logger.info("[stub] text_to_video → %s (model=%s)", out, model_id)
 

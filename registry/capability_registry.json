@@ -70,8 +70,48 @@
     },
 
     {
+      "model_id": "ltx23-t2v",
+      "display_name": "LTX-2.3 Distilled (Text-to-Video, Local, Audio)",
+      "category": "text_to_video",
+      "access": "local",
+      "source": "huggingface",
+      "hf_repo": "Lightricks/LTX-2.3",
+      "hf_variant": "ltx-2.3-22b-distilled",
+      "cost_per_call": 0.0,
+      "avg_latency_seconds": 45,
+      "vram_required_gb": 16,
+      "input_format": { "type": "text_prompt", "negative_prompt_supported": false },
+      "output_format": { "type": "video", "format": "mp4", "typical_fps": 25, "max_duration_seconds": 10, "has_audio": true },
+      "quality_tier": 2,
+      "strengths": ["fast_8_steps", "joint_audio_video", "high_quality", "free", "no_watermark", "open_source", "spatial_upscaling"],
+      "weaknesses": ["needs_16gb_vram", "requires_python_3.12", "requires_cuda_12.7+"],
+      "watermark": false,
+      "notes": "LTX-2.3 distilled — 8 inference steps, ~45s generation, joint audio+video. DEFAULT for text_to_video. Requires Python>=3.12, CUDA>12.7. Falls back to Wan2.2 if env not met. Uses ltx-pipelines package (not diffusers)."
+    },
+
+    {
+      "model_id": "ltx23-i2v",
+      "display_name": "LTX-2.3 Distilled (Image-to-Video, Local, Audio)",
+      "category": "image_to_video",
+      "access": "local",
+      "source": "huggingface",
+      "hf_repo": "Lightricks/LTX-2.3",
+      "hf_variant": "ltx-2.3-22b-distilled",
+      "cost_per_call": 0.0,
+      "avg_latency_seconds": 45,
+      "vram_required_gb": 16,
+      "input_format": { "type": "image+text", "accepted_formats": ["jpg", "png"], "max_resolution": "1280x720" },
+      "output_format": { "type": "video", "format": "mp4", "typical_fps": 25, "max_duration_seconds": 10, "has_audio": true },
+      "quality_tier": 2,
+      "strengths": ["fast_8_steps", "joint_audio_video", "high_quality", "free", "no_watermark", "image_conditioning", "spatial_upscaling"],
+      "weaknesses": ["needs_16gb_vram", "requires_python_3.12", "requires_cuda_12.7+"],
+      "watermark": false,
+      "notes": "LTX-2.3 distilled I2V — image-conditioned with joint audio. DEFAULT for image_to_video. Same env reqs as T2V variant."
+    },
+
+    {
       "model_id": "ltx-video-t2v",
-      "display_name": "LTX-Video (Text-to-Video, Fast Local)",
+      "display_name": "LTX-Video 1.0 (Text-to-Video, Fast Local, Legacy)",
       "category": "text_to_video",
       "access": "local",
       "source": "huggingface",
@@ -83,9 +123,9 @@
       "output_format": { "type": "video", "format": "mp4", "typical_fps": 24, "max_duration_seconds": 5 },
       "quality_tier": 4,
       "strengths": ["very_fast", "low_vram", "good_for_drafts"],
-      "weaknesses": ["lower_quality", "limited_motion_complexity"],
+      "weaknesses": ["lower_quality", "limited_motion_complexity", "no_audio"],
       "watermark": false,
-      "notes": "Use for rapid drafts and previews before final render."
+      "notes": "Legacy LTX-Video 1.0. Use ltx23-t2v instead when environment supports it."
     },
 
     {
