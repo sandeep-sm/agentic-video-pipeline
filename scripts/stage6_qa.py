@@ -143,13 +143,23 @@ def _vlm_score_frame(frame_path: Path, intent: str, vlm_model: str) -> dict:
         except Exception as exc:
             logger.warning("Gemini frame score failed: %s — mock.", exc)
 
-    # Mock
+    # Try local Qwen3-VL if no API keys available
+    if frame_path.exists():
+        try:
+            from scripts.local_models import run_qwen_vl_gate  # noqa: PLC0415
+            result = run_qwen_vl_gate(frame_path, prompt)
+            if result is not None:
+                return result
+        except Exception:
+            pass
+
+    # Mock fallback
     score = 7.0 if (frame_path.exists() and frame_path.stat().st_size > 0) else 3.0
     return {
         "score": score,
         "visual_quality": score,
         "intent_match": score,
-        "feedback": "[MOCK] No VLM key — placeholder score.",
+        "feedback": "[MOCK] No VLM available — placeholder score.",
         "_mock": True,
     }
 
@@ -166,7 +176,9 @@ def run_qa(
     Returns a QA result dict.
     """
     output_path = Path(output_path)
-    video_params = spec.get("video_params", {})
+    video_params = spec.get("video_params", {}) if isinstance(spec, dict) else {}
+    if not isinstance(video_params, dict):
+        video_params = {}
     expected_resolution = video_params.get("resolution", [1920, 1080])
     expected_fps = float(video_params.get("fps", 30))
     expected_duration = float(video_params.get("total_duration_seconds", 9.0))

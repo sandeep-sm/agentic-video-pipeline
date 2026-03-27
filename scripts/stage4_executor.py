@@ -218,6 +218,16 @@ def run_vlm_quality_gate(
             except Exception as exc:
                 logger.warning("Gemini VLM gate failed: %s — using mock score.", exc)
 
+    # Try local Qwen3-VL gate when no API key is available
+    if output_path and output_path.exists() and output_path.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp"}:
+        try:
+            from scripts.local_models import run_qwen_vl_gate  # noqa: PLC0415
+            result = run_qwen_vl_gate(output_path, validation_prompt)
+            if result is not None:
+                return result
+        except Exception:
+            pass
+
     # Fallback mock gate
     is_mock = True
     if not output_path or not output_path.exists():
@@ -321,30 +331,58 @@ def _find_source_image_path(task_node: dict) -> Path | None:
     return None
 
 
+_WAN_I2V_MODELS = {"wan2.2-i2v", "wan2.1-i2v"}
+_WAN_T2V_MODELS = {"wan2.2-t2v", "wan2.1-t2v", "ltx-video-t2v"}
+_FLUX_MODELS = {"flux2-klein", "flux1-dev"}
+
+
 def _execute_image_to_video(task_node: dict, model: dict, output_dir: Path) -> Path:
     out = output_dir / "output.mp4"
-    inputs = task_node.get("inputs", {})
+    inputs = task_node.get("inputs", {}) or {}
     duration = float(inputs.get("duration_seconds", 3.0))
-    logger.info("[stub] image_to_video → %s (model=%s)", out, model.get("model_id", "?"))
+    model_id = model.get("model_id", "")
 
     source_image = _find_source_image_path(task_node)
 
+    if model_id in _WAN_I2V_MODELS:
+        from scripts.local_models import run_wan_i2v  # noqa: PLC0415
+        logger.info("[wan_i2v] image_to_video → %s (model=%s)", out, model_id)
+        result = run_wan_i2v(task_node, model, output_dir, source_image)
+        if result:
+            return result
+        logger.warning("[wan_i2v] Local inference failed for '%s'; falling back.", task_node.get("task_id", "?"))
+
+    else:
+        logger.info("[stub] image_to_video → %s (model=%s)", out, model_id)
+
+    # Ken Burns fallback (better than black frame)
     if source_image and _write_image_motion_mp4(source_image, out, duration):
         return out
 
     logger.warning(
-        "image_to_video stub could not resolve source image for task '%s'; using black placeholder.",
+        "image_to_video: no source image for task '%s'; using black placeholder.",
         task_node.get("task_id", "?"),
     )
-
     _write_placeholder_mp4(out, duration)
     return out
 
 
 def _execute_text_to_video(task_node: dict, model: dict, output_dir: Path) -> Path:
     out = output_dir / "output.mp4"
-    duration = float(task_node.get("inputs", {}).get("duration_seconds", 3.0))
-    logger.info("[stub] text_to_video → %s (model=%s)", out, model.get("model_id", "?"))
+    inputs = task_node.get("inputs", {}) or {}
+    duration = float(inputs.get("duration_seconds", 3.0))
+    model_id = model.get("model_id", "")
+
+    if model_id in _WAN_T2V_MODELS:
+        from scripts.local_models import run_wan_t2v  # noqa: PLC0415
+        logger.info("[wan_t2v] text_to_video → %s (model=%s)", out, model_id)
+        result = run_wan_t2v(task_node, model, output_dir)
+        if result:
+            return result
+        logger.warning("[wan_t2v] Local inference failed for '%s'; falling back.", task_node.get("task_id", "?"))
+    else:
+        logger.info("[stub] text_to_video → %s (model=%s)", out, model_id)
+
     _write_placeholder_mp4(out, duration)
     return out
 
@@ -366,15 +404,38 @@ def _execute_video_segmentation(task_node: dict, model: dict, output_dir: Path) 
 
 def _execute_text_to_image(task_node: dict, model: dict, output_dir: Path) -> Path:
     out = output_dir / "output.png"
-    logger.info("[stub] text_to_image → %s (model=%s)", out, model.get("model_id", "?"))
+    model_id = model.get("model_id", "")
+
+    if model_id in _FLUX_MODELS:
+        from scripts.local_models import run_flux_t2i  # noqa: PLC0415
+        logger.info("[flux_t2i] text_to_image → %s (model=%s)", out, model_id)
+        result = run_flux_t2i(task_node, model, output_dir)
+        if result:
+            return result
+        logger.warning("[flux_t2i] Local inference failed for '%s'; falling back.", task_node.get("task_id", "?"))
+    else:
+        logger.info("[stub] text_to_image → %s (model=%s)", out, model_id)
+
     _write_placeholder_png(out)
     return out
 
 
 def _execute_text_to_speech(task_node: dict, model: dict, output_dir: Path) -> Path:
     out = output_dir / "output.wav"
-    duration = float(task_node.get("inputs", {}).get("duration_seconds", 3.0))
-    logger.info("[stub] text_to_speech → %s (model=%s)", out, model.get("model_id", "?"))
+    inputs = task_node.get("inputs", {}) or {}
+    duration = float(inputs.get("duration_seconds", 3.0))
+    model_id = model.get("model_id", "")
+
+    if model_id == "chatterbox-tts":
+        from scripts.local_models import run_chatterbox_tts  # noqa: PLC0415
+        logger.info("[chatterbox] text_to_speech → %s (model=%s)", out, model_id)
+        result = run_chatterbox_tts(task_node, model, output_dir)
+        if result:
+            return result
+        logger.warning("[chatterbox] Local inference failed for '%s'; falling back.", task_node.get("task_id", "?"))
+    else:
+        logger.info("[stub] text_to_speech → %s (model=%s)", out, model_id)
+
     _write_placeholder_wav(out, duration)
     return out
 
@@ -604,7 +665,8 @@ def _execute_composite(
         stage5_compositor.compose_video(spec, {}, out, draft_mode=True)
     except Exception as exc:
         logger.warning("Compositor failed in execute_composite: %s — writing stub.", exc)
-        _write_placeholder_mp4(out, duration_seconds=spec.get("video_params", {}).get("total_duration_seconds", 3.0))
+        vp = spec.get("video_params", {}) if isinstance(spec, dict) else {}
+        _write_placeholder_mp4(out, duration_seconds=(vp or {}).get("total_duration_seconds", 3.0))
     return out
 
 

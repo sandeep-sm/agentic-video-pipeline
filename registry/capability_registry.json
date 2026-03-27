@@ -1,7 +1,7 @@
 {
   "_meta": {
     "description": "Registry of all available models for the agentic video pipeline. The Model Router reads this to make selection decisions. Add new models here; do not hardcode model names in pipeline code.",
-    "last_updated": "2026-03-25",
+    "last_updated": "2026-03-26",
     "quality_tiers": {
       "1": "Highest quality, paid API — use for final renders",
       "2": "Good quality, paid API — use for production work",
@@ -88,6 +88,25 @@
       "notes": "Use for rapid drafts and previews before final render."
     },
 
+    {
+      "model_id": "wan2.2-t2v",
+      "display_name": "WAN 2.2 (Text-to-Video, Local)",
+      "category": "text_to_video",
+      "access": "local",
+      "source": "huggingface",
+      "hf_repo": "Wan-Video/Wan2.2-T2V-14B",
+      "cost_per_call": 0.0,
+      "avg_latency_seconds": 120,
+      "vram_required_gb": 16,
+      "input_format": { "type": "text_prompt", "negative_prompt_supported": true },
+      "output_format": { "type": "video", "format": "mp4", "typical_fps": 24, "max_duration_seconds": 6 },
+      "quality_tier": 3,
+      "strengths": ["free", "no_watermark", "open_source", "improved_over_2.1", "higher_resolution"],
+      "weaknesses": ["slow", "needs_16gb_vram"],
+      "watermark": false,
+      "notes": "Wan2.2 T2V — improved quality and motion over Wan2.1. Use diffusers WanPipeline."
+    },
+
     // ─── VIDEO GENERATION: IMAGE-TO-VIDEO ────────────────────────────────────
 
     {
@@ -122,6 +141,25 @@
       "strengths": ["strong_motion", "character_preservation", "longer_clips"],
       "weaknesses": ["api_only"],
       "watermark": false
+    },
+
+    {
+      "model_id": "wan2.2-i2v",
+      "display_name": "WAN 2.2 (Image-to-Video, Local)",
+      "category": "image_to_video",
+      "access": "local",
+      "source": "huggingface",
+      "hf_repo": "Wan-Video/Wan2.2-I2V-14B",
+      "cost_per_call": 0.0,
+      "avg_latency_seconds": 90,
+      "vram_required_gb": 16,
+      "input_format": { "type": "image", "accepted_formats": ["jpg", "png"], "max_resolution": "1280x720" },
+      "output_format": { "type": "video", "format": "mp4", "typical_fps": 24, "max_duration_seconds": 6 },
+      "quality_tier": 3,
+      "strengths": ["free", "open_source", "no_watermark", "improved_subject_consistency", "higher_fps_than_2.1"],
+      "weaknesses": ["slow", "needs_16gb_vram"],
+      "watermark": false,
+      "notes": "Wan2.2 I2V — better motion quality and longer clips than 2.1. Use diffusers WanImageToVideoPipeline."
     },
 
     {
@@ -263,6 +301,25 @@
     },
 
     // ─── IMAGE GENERATION ─────────────────────────────────────────────────────
+
+    {
+      "model_id": "flux2-klein",
+      "display_name": "FLUX.2 Klein 9B (Image Generation, Local)",
+      "category": "text_to_image",
+      "access": "local",
+      "source": "huggingface",
+      "hf_repo": "black-forest-labs/FLUX.2-klein-9B",
+      "cost_per_call": 0.0,
+      "avg_latency_seconds": 10,
+      "vram_required_gb": 18,
+      "input_format": { "type": "text_prompt" },
+      "output_format": { "type": "image", "format": "png", "max_resolution": "2048x2048" },
+      "quality_tier": 2,
+      "strengths": ["high_quality", "fast_for_9b", "photorealistic", "free", "better_prompt_adherence_than_flux1"],
+      "weaknesses": ["needs_18gb_vram_bfloat16"],
+      "watermark": false,
+      "notes": "FLUX.2 Klein 9B — improved quality over FLUX.1. Uses FluxPipeline from diffusers."
+    },
 
     {
       "model_id": "flux1-dev",
@@ -455,6 +512,27 @@
       "weaknesses": ["slightly_less_precise_on_edge_cases"],
       "watermark": false,
       "notes": "Fallback code-gen model. Use when Anthropic key unavailable or in economy mode."
+    },
+
+    // ─── VLM (LOCAL) ─────────────────────────────────────────────────────
+
+    {
+      "model_id": "qwen3-vl",
+      "display_name": "Qwen3-VL 30B MoE (Local VLM Quality Gate)",
+      "category": "vlm",
+      "access": "local",
+      "source": "huggingface",
+      "hf_repo": "Qwen/Qwen3-VL-30B-A3B-Instruct",
+      "cost_per_call": 0.0,
+      "avg_latency_seconds": 8,
+      "vram_required_gb": 20,
+      "input_format": { "type": "image_or_video_frame", "accepted_formats": ["jpg", "png", "webp"] },
+      "output_format": { "type": "structured_json_analysis" },
+      "quality_tier": 2,
+      "strengths": ["free", "no_api_dependency", "strong_visual_reasoning", "moe_efficient_3b_active_params"],
+      "weaknesses": ["needs_20gb_vram_for_full_weights", "slower_than_api_vlms"],
+      "watermark": false,
+      "notes": "30B MoE model with 3B active params. Use as local VLM fallback when API keys unavailable. Loaded via transformers Qwen2_5_VLForConditionalGeneration."
     },
 
     // ─── VLM (QUALITY VALIDATION & ASSET ANALYSIS) ───────────────────────

@@ -473,6 +473,9 @@ def run_pipeline(
             result = execute_task(draft_node, selected, registry, intermediates_dir, spec=spec)
             if result.output_path:
                 draft_task_outputs[task_id] = result.output_path
+                output_ref = str(draft_node.get("output_ref", "")).strip()
+                if output_ref:
+                    draft_task_outputs[output_ref] = result.output_path
 
         # Composite draft
         try:
@@ -527,6 +530,9 @@ def run_pipeline(
             existing_path = Path(task_node["output_path"])
             if existing_path.exists():
                 task_outputs[task_id] = existing_path
+                output_ref = str(task_node.get("output_ref", "")).strip()
+                if output_ref:
+                    task_outputs[output_ref] = existing_path
                 logger.info("[Stage 4] Skipping completed task '%s' (resume).", task_id)
                 continue
 

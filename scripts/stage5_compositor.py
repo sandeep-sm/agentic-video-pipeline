@@ -75,17 +75,22 @@ def _make_position_func(start_pos: list, end_pos: list, start_t: float, end_t: f
     return pos_at
 
 
-def _resolve_asset_path(task_ref: str, task_outputs: dict, project_root: Path) -> Path | None:
+def _resolve_asset_path(
+    task_ref: str,
+    task_outputs: dict,
+    project_root: Path,
+    asset_type: str = "",
+) -> Path | None:
     """
     Resolve layer task_ref to a file path.
-    task_outputs maps task_id → Path.
-    Also handles direct asset paths.
+    task_outputs maps task_id/output_ref → Path.
+    Falls back to scanning intermediates/ when no direct match is found.
     """
     if task_ref in task_outputs:
         p = task_outputs[task_ref]
         return Path(p) if p else None
 
-    # Try by basename against task output keys (handles output_ref vs task_id naming mismatches)
+    # Try by basename against task output keys (handles output_ref vs task_id mismatches)
     task_ref_name = Path(str(task_ref)).name
     if task_ref_name in task_outputs:
         p = task_outputs[task_ref_name]
@@ -100,6 +105,26 @@ def _resolve_asset_path(task_ref: str, task_outputs: dict, project_root: Path) -
     candidate2 = project_root / "assets" / task_ref
     if candidate2.exists():
         return candidate2
+
+    # Last resort: scan intermediates/ for a file whose parent dir contains task_ref,
+    # or (for audio layers) return the first .wav found when only one TTS task exists.
+    intermediates_dir = project_root / "intermediates"
+    if intermediates_dir.is_dir():
+        # 1. Directory-name match: task_ref substring in the task subdir name
+        for task_dir in sorted(intermediates_dir.iterdir()):
+            if not task_dir.is_dir():
+                continue
+            if task_ref.lower() in task_dir.name.lower() or task_dir.name.lower() in task_ref.lower():
+                for f in task_dir.iterdir():
+                    if f.is_file() and f.stat().st_size > 0:
+                        return f
+
+        # 2. Audio fallback: if this is an audio layer and only one .wav exists, use it
+        if asset_type == "audio":
+            wav_files = sorted(intermediates_dir.rglob("*.wav"))
+            wav_files = [w for w in wav_files if w.stat().st_size > 0]
+            if len(wav_files) == 1:
+                return wav_files[0]
 
     return None
 
@@ -137,6 +162,9 @@ def compose_video(
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     video_params = spec.get("video_params", {})
+    if not isinstance(video_params, dict):
+        logger.warning("spec.video_params is not a dict (%r) — using defaults.", type(video_params).__name__)
+        video_params = {}
     resolution = video_params.get("resolution", [1920, 1080])
     fps = int(video_params.get("fps", 30))
     total_duration = float(video_params.get("total_duration_seconds", 9.0))
@@ -229,7 +257,7 @@ def compose_video(
 
         else:
             # ── File-based layers ─────────────────────────────────────────────
-            asset_path = _resolve_asset_path(task_ref, task_outputs, project_root)
+            asset_path = _resolve_asset_path(task_ref, task_outputs, project_root, asset_type)
             if asset_path is None or not asset_path.exists():
                 logger.warning("Layer '%s': asset not found for ref '%s' — skipping.", layer_id, task_ref)
                 continue
