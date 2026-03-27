@@ -441,7 +441,7 @@
 
     {
       "model_id": "gemini-pro-code",
-      "display_name": "Gemini 1.5 Pro (Code Generation)",
+      "display_name": "Gemini 3.0 Flash (Code Generation)",
       "category": "code_gen",
       "access": "api",
       "api_key_env": "GOOGLE_API_KEY",
@@ -479,7 +479,7 @@
 
     {
       "model_id": "gemini-vision",
-      "display_name": "Gemini Vision (VLM fallback)",
+      "display_name": "Gemini 3.0 Flash (VLM)",
       "category": "vlm",
       "access": "api",
       "api_key_env": "GOOGLE_API_KEY",

@@ -56,16 +56,15 @@ def _call_vlm(model_id: str, prompt: str, image_path: Path | None = None) -> dic
     # ── Gemini Vision ─────────────────────────────────────────────────────────
     if model_id == "gemini-vision" and google_key:
         try:
-            import google.generativeai as genai  # noqa: PLC0415
+            from google import genai  # noqa: PLC0415
 
-            genai.configure(api_key=google_key)
-            model = genai.GenerativeModel("gemini-1.5-flash")
+            client = genai.Client(api_key=google_key)
             parts: list = [prompt]
             if image_path and image_path.exists():
                 from PIL import Image as PILImage  # noqa: PLC0415
 
                 parts.insert(0, PILImage.open(image_path))
-            response = model.generate_content(parts)
+            response = client.models.generate_content(model="gemini-3.0-flash", contents=parts)
             return {"result": response.text, "_mock": False}
         except Exception as exc:
             logger.warning("Gemini Vision call failed: %s — falling back to mock", exc)

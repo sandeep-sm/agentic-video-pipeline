@@ -52,11 +52,10 @@ def _call_llm(prompt: str, model_id: str = "claude-opus") -> dict:
     # ── Gemini Pro ────────────────────────────────────────────────────────────
     if model_id == "gemini-pro" and google_key:
         try:
-            import google.generativeai as genai  # noqa: PLC0415
+            from google import genai  # noqa: PLC0415
 
-            genai.configure(api_key=google_key)
-            model = genai.GenerativeModel("gemini-1.5-pro")
-            response = model.generate_content(prompt)
+            client = genai.Client(api_key=google_key)
+            response = client.models.generate_content(model="gemini-3.0-flash", contents=prompt)
             return {"result": response.text, "_mock": False}
         except Exception as exc:
             logger.warning("Gemini LLM call failed: %s — falling back to mock", exc)

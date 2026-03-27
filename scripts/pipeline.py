@@ -243,7 +243,7 @@ def _build_run_report(
     failures: list[dict],
 ) -> dict:
     total_cost = sum(r.cost_actual for r in task_results)
-    duration_s = time.time() - start_time
+    duration_s = time.monotonic() - start_time
 
     task_report = [
         {
@@ -297,7 +297,7 @@ def run_pipeline(
             "Continuing as requested."
         )
 
-    start_time = time.time()
+    start_time = time.monotonic()
     run_id = generate_run_id()
     setup_logging(verbose=False)
     logger.info("=== Agentic Video Pipeline — %s ===", run_id)

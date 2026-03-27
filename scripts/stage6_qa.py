@@ -31,7 +31,7 @@ def _check_file(output_path: Path) -> tuple[bool, str]:
 def _get_video_metadata(output_path: Path) -> dict:
     """Return resolution, fps, and duration of a video file."""
     try:
-        from moviepy.editor import VideoFileClip  # noqa: PLC0415
+        from moviepy import VideoFileClip  # noqa: PLC0415
 
         clip = VideoFileClip(str(output_path))
         meta = {
@@ -65,7 +65,7 @@ def _get_video_metadata(output_path: Path) -> dict:
 def _extract_frame(output_path: Path, t: float, dest: Path) -> bool:
     """Save frame at time t (seconds) to dest as PNG."""
     try:
-        from moviepy.editor import VideoFileClip  # noqa: PLC0415
+        from moviepy import VideoFileClip  # noqa: PLC0415
 
         clip = VideoFileClip(str(output_path))
         t_clamped = min(t, clip.duration - 0.001)
@@ -133,13 +133,12 @@ def _vlm_score_frame(frame_path: Path, intent: str, vlm_model: str) -> dict:
 
     elif vlm_model == "gemini-vision" and google_key and frame_path.exists():
         try:
-            import google.generativeai as genai  # noqa: PLC0415
+            from google import genai  # noqa: PLC0415
             from PIL import Image as PILImage  # noqa: PLC0415
 
-            genai.configure(api_key=google_key)
-            model = genai.GenerativeModel("gemini-1.5-flash")
+            client = genai.Client(api_key=google_key)
             img = PILImage.open(frame_path)
-            response = model.generate_content([img, prompt])
+            response = client.models.generate_content(model="gemini-3.0-flash", contents=[img, prompt])
             return _parse(response.text)
         except Exception as exc:
             logger.warning("Gemini frame score failed: %s — mock.", exc)

@@ -68,7 +68,7 @@ def _write_placeholder_mp4(output_path: Path, duration_seconds: float = 1.0) -> 
     """Save a 1-second black MP4 (requires moviepy or falls back to a tiny stub file)."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
     try:
-        from moviepy.editor import ColorClip  # noqa: PLC0415
+        from moviepy import ColorClip  # noqa: PLC0415
 
         clip = ColorClip(size=(256, 144), color=[0, 0, 0], duration=duration_seconds)
         clip.write_videofile(
@@ -177,13 +177,12 @@ def run_vlm_quality_gate(
                 logger.warning("Claude VLM gate failed: %s — using mock score.", exc)
         elif vlm_model == "gemini-vision" and google_key:
             try:
-                import google.generativeai as genai  # noqa: PLC0415
+                from google import genai  # noqa: PLC0415
                 from PIL import Image as PILImage  # noqa: PLC0415
 
-                genai.configure(api_key=google_key)
-                model = genai.GenerativeModel("gemini-1.5-flash")
+                client = genai.Client(api_key=google_key)
                 img = PILImage.open(output_path)
-                response = model.generate_content([img, system_prompt])
+                response = client.models.generate_content(model="gemini-3.0-flash", contents=[img, system_prompt])
                 sc, fb, dims = _parse_score_response(response.text)
                 return {
                     "score": sc,
@@ -349,13 +348,13 @@ def _call_llm_for_code(
 
     if model_id.startswith("gemini") and google_key:
         try:
-            import google.generativeai as genai  # noqa: PLC0415
-            genai.configure(api_key=google_key)
-            m = genai.GenerativeModel(
-                "gemini-1.5-pro",
-                system_instruction=_CODE_GEN_SYSTEM_PROMPT,
+            from google import genai  # noqa: PLC0415
+            client = genai.Client(api_key=google_key)
+            resp = client.models.generate_content(
+                model="gemini-3.0-flash",
+                contents=prompt,
+                config={"system_instruction": _CODE_GEN_SYSTEM_PROMPT},
             )
-            resp = m.generate_content(prompt)
             return resp.text.strip()
         except Exception as exc:
             logger.warning("[code_gen] Gemini API failed: %s", exc)
@@ -434,7 +433,7 @@ def _fallback_code_gen_placeholder(task_node: dict, output_path: Path) -> None:
     desc = task_node.get("description", "code_gen effect")[:60]
     duration = float(task_node.get("inputs", {}).get("duration_seconds", 3.0))
     try:
-        from moviepy.editor import ColorClip, TextClip, CompositeVideoClip  # noqa: PLC0415
+        from moviepy import ColorClip, TextClip, CompositeVideoClip  # noqa: PLC0415
         bg = ColorClip(size=(1920, 1080), color=[20, 20, 20], duration=duration)
         try:
             txt = TextClip(

@@ -16,13 +16,13 @@ logger = logging.getLogger(__name__)
 def _require_moviepy():
     """Import moviepy or raise a helpful ImportError."""
     try:
-        import moviepy.editor as mpy  # noqa: PLC0415
+        import moviepy as mpy  # noqa: PLC0415
 
         return mpy
     except ImportError as exc:
         raise ImportError(
             "moviepy is required for compositing. Install it with:\n"
-            "  pip install moviepy>=1.0.3\n"
+            "  pip install moviepy>=2.0.0\n"
             "Also ensure ffmpeg is available in your PATH."
         ) from exc
 
