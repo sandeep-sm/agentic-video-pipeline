@@ -27,6 +27,78 @@ def _require_moviepy():
         ) from exc
 
 
+def _render_text_as_image(
+    text_content: str,
+    font_size: int,
+    color: str,
+    width: int = 1920,
+) -> "np.ndarray | None":
+    """
+    Render text to an RGBA numpy array using Pillow.
+    Used as a final fallback when MoviePy TextClip fails (no named fonts available).
+    Returns None if Pillow itself fails.
+    """
+    try:
+        import numpy as np
+        from PIL import Image as PILImage, ImageDraw, ImageFont
+
+        # Try progressively looser font sources
+        font = None
+        candidate_paths = [
+            # Common Linux paths (TACC / conda envs)
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+            "/usr/share/fonts/liberation/LiberationSans-Bold.ttf",
+            "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+            "/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf",
+        ]
+        for path in candidate_paths:
+            try:
+                font = ImageFont.truetype(path, size=font_size)
+                break
+            except (OSError, IOError):
+                continue
+
+        if font is None:
+            # Last resort: Pillow built-in bitmap font (ignores font_size)
+            try:
+                font = ImageFont.load_default(size=font_size)  # Pillow >= 10.1
+            except TypeError:
+                font = ImageFont.load_default()
+
+        # Measure text size
+        dummy = PILImage.new("RGBA", (1, 1))
+        draw_dummy = ImageDraw.Draw(dummy)
+        try:
+            bbox = draw_dummy.textbbox((0, 0), text_content, font=font)
+            tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        except AttributeError:
+            tw, th = draw_dummy.textsize(text_content, font=font)  # Pillow < 9.2
+
+        tw = max(tw + 20, 10)
+        th = max(th + 20, 10)
+
+        # Parse color string → RGB tuple
+        color_map = {
+            "white": (255, 255, 255),
+            "black": (0, 0, 0),
+            "red": (255, 0, 0),
+            "green": (0, 255, 0),
+            "blue": (0, 0, 255),
+            "yellow": (255, 255, 0),
+        }
+        rgb = color_map.get(str(color).lower(), (255, 255, 255))
+
+        img = PILImage.new("RGBA", (tw, th), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(img)
+        draw.text((10, 10), text_content, font=font, fill=(*rgb, 255))
+        return np.array(img)
+    except Exception as exc:
+        logger.warning("Pillow text rendering failed: %s", exc)
+        return None
+
+
 def _interpolate_opacity(opacity_curve: list[dict], t: float) -> float:
     """
     Interpolate opacity at time t from an opacity_curve keyframe list.
@@ -252,8 +324,16 @@ def compose_video(
                         color=color,
                     ).with_duration(clip_duration)
                 except Exception as exc2:
-                    logger.error("TextClip failed entirely: %s — skipping layer '%s'.", exc2, layer_id)
-                    continue
+                    logger.warning(
+                        "TextClip failed with DejaVu: %s — trying Pillow renderer for layer '%s'.",
+                        exc2, layer_id,
+                    )
+                    frame_arr = _render_text_as_image(text_content, font_size, color)
+                    if frame_arr is None:
+                        logger.error("All text renderers failed — skipping layer '%s'.", layer_id)
+                        continue
+                    import numpy as np  # noqa: PLC0415
+                    clip = mpy.ImageClip(frame_arr).with_duration(clip_duration)
 
         else:
             # ── File-based layers ─────────────────────────────────────────────
