@@ -265,7 +265,7 @@
       "category": "image_to_video",
       "access": "local",
       "source": "huggingface",
-      "hf_repo": "Wan-Video/Wan2.1-I2V-14B-480P",
+      "hf_repo": "Wan-AI/Wan2.1-I2V-14B-480P",
       "cost_per_call": 0.0,
       "avg_latency_seconds": 120,
       "vram_required_gb": 16,

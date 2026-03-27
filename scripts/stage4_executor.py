@@ -337,6 +337,20 @@ _WAN_T2V_MODELS = {"wan2.2-t2v", "wan2.1-t2v", "ltx-video-t2v"}
 _WAN_V2V_MODELS = {"wan2.2-animate"}
 _FLUX_MODELS = {"flux2-klein", "flux1-dev"}
 
+# Fallback model dicts — used when the primary model (LTX) fails and we need
+# to override the hf_repo to a known-good Wan repo instead of passing through
+# the LTX model dict (which has hf_repo: "Lightricks/LTX-2.3").
+_WAN_I2V_FALLBACK_MODEL = {
+    "model_id": "wan2.2-i2v",
+    "hf_repo": "Wan-AI/Wan2.2-I2V-A14B",
+    "output_format": {"typical_fps": 24},
+}
+_WAN_T2V_FALLBACK_MODEL = {
+    "model_id": "wan2.2-t2v",
+    "hf_repo": "Wan-AI/Wan2.2-T2V-A14B",
+    "output_format": {"typical_fps": 24},
+}
+
 
 def _execute_image_to_video(task_node: dict, model: dict, output_dir: Path) -> Path:
     out = output_dir / "output.mp4"
@@ -356,10 +370,11 @@ def _execute_image_to_video(task_node: dict, model: dict, output_dir: Path) -> P
             return result
         logger.info("[ltx23] LTX-2.3 not available — falling back to Wan I2V.")
 
-        # Wan fallback
+        # Wan fallback — use known-good Wan model dict, not the LTX one
         from scripts.local_models import run_wan_i2v  # noqa: PLC0415
-        logger.info("[wan_i2v] image_to_video → %s (model=%s)", out, model_id)
-        result = run_wan_i2v(task_node, model, output_dir, source_image)
+        wan_model = model if model_id in _WAN_I2V_MODELS else _WAN_I2V_FALLBACK_MODEL
+        logger.info("[wan_i2v] image_to_video → %s (model=%s)", out, wan_model.get("model_id"))
+        result = run_wan_i2v(task_node, wan_model, output_dir, source_image)
         if result:
             return result
         logger.warning("[wan_i2v] Local inference also failed for '%s'; falling back.", task_node.get("task_id", "?"))
@@ -394,10 +409,11 @@ def _execute_text_to_video(task_node: dict, model: dict, output_dir: Path) -> Pa
             return result
         logger.info("[ltx23] LTX-2.3 not available — falling back to Wan T2V.")
 
-        # Wan fallback
+        # Wan fallback — use known-good Wan model dict, not the LTX one
         from scripts.local_models import run_wan_t2v  # noqa: PLC0415
-        logger.info("[wan_t2v] text_to_video → %s (model=%s)", out, model_id)
-        result = run_wan_t2v(task_node, model, output_dir)
+        wan_model = model if model_id in _WAN_T2V_MODELS else _WAN_T2V_FALLBACK_MODEL
+        logger.info("[wan_t2v] text_to_video → %s (model=%s)", out, wan_model.get("model_id"))
+        result = run_wan_t2v(task_node, wan_model, output_dir)
         if result:
             return result
         logger.warning("[wan_t2v] Local inference also failed for '%s'; falling back.", task_node.get("task_id", "?"))
