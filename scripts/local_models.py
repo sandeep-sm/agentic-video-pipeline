@@ -118,11 +118,10 @@ def run_wan_i2v(
         logger.info("[wan_i2v] Wrote %s", out)
         return out
 
-    except ImportError:
-        logger.debug("[wan_i2v] diffusers WanImageToVideoPipeline not available.")
+    except ImportError as exc:
+        logger.warning("[wan_i2v] WanImageToVideoPipeline not available (diffusers too old?): %s", exc)
     except Exception as exc:
         logger.warning("[wan_i2v] diffusers pipeline failed: %s — trying wan package.", exc)
-        # Evict bad cache entry so next call retries the load
         _wan_i2v_cache.pop(hf_repo, None)
 
     # ── Try wan package ────────────────────────────────────────────────────
@@ -225,8 +224,8 @@ def run_wan_t2v(
         logger.info("[wan_t2v] Wrote %s", out)
         return out
 
-    except ImportError:
-        logger.debug("[wan_t2v] diffusers WanPipeline not available.")
+    except ImportError as exc:
+        logger.warning("[wan_t2v] WanPipeline not available (diffusers too old?): %s", exc)
     except Exception as exc:
         logger.warning("[wan_t2v] diffusers failed: %s — trying wan package.", exc)
         _wan_t2v_cache.pop(hf_repo, None)

@@ -290,7 +290,12 @@ def compose_video(
         if clip.duration and clip.duration > clip_duration:
             clip = clip.subclipped(0, clip_duration)
         elif clip.duration and clip.duration < clip_duration:
-            clip = clip.looped(duration=clip_duration)
+            # MoviePy v2 removed .looped() — use concatenation instead
+            try:
+                n = max(2, int(clip_duration / clip.duration) + 1)
+                clip = mpy.concatenate_videoclips([clip] * n).subclipped(0, clip_duration)
+            except Exception:
+                clip = clip.with_duration(clip_duration)  # last resort: freeze last frame
 
         # ── Opacity / fade (via fl_image + opacity_curve) ─────────────────────
         def _make_opacity_filter(curve, dur):
