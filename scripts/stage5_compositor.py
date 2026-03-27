@@ -85,6 +85,12 @@ def _resolve_asset_path(task_ref: str, task_outputs: dict, project_root: Path) -
         p = task_outputs[task_ref]
         return Path(p) if p else None
 
+    # Try by basename against task output keys (handles output_ref vs task_id naming mismatches)
+    task_ref_name = Path(str(task_ref)).name
+    if task_ref_name in task_outputs:
+        p = task_outputs[task_ref_name]
+        return Path(p) if p else None
+
     # Try as a relative path from project root
     candidate = project_root / task_ref
     if candidate.exists():
@@ -154,7 +160,11 @@ def compose_video(
     clips = [background]
 
     # ── Process each layer ────────────────────────────────────────────────────
-    timeline = sorted(spec.get("timeline", []), key=lambda l: l.get("layer_id", ""))
+    timeline_raw = spec.get("timeline", [])
+    if not isinstance(timeline_raw, list):
+        logger.warning("spec.timeline is not a list; defaulting to empty timeline.")
+        timeline_raw = []
+    timeline = sorted([l for l in timeline_raw if isinstance(l, dict)], key=lambda l: l.get("layer_id", ""))
     audio_clips = []
 
     for layer in timeline:
@@ -164,11 +174,30 @@ def compose_video(
         start_time = float(layer.get("start_time", 0.0))
         end_time = float(layer.get("end_time", total_duration))
         clip_duration = end_time - start_time
-        position = layer.get("position", {"x": render_w // 2, "y": render_h // 2})
+        position_raw = layer.get("position", {"x": render_w // 2, "y": render_h // 2})
+        if isinstance(position_raw, dict):
+            position = position_raw
+        elif isinstance(position_raw, (list, tuple)) and len(position_raw) == 2:
+            position = {"x": position_raw[0], "y": position_raw[1]}
+        else:
+            position = {"x": render_w // 2, "y": render_h // 2}
         scale = float(layer.get("scale", 1.0)) * scale_factor
-        opacity_curve = layer.get("opacity_curve", [{"t": 0.0, "v": 1.0}])
-        motion_spec = layer.get("motion")
-        text_spec = layer.get("text")
+        opacity_curve_raw = layer.get("opacity_curve", [{"t": 0.0, "v": 1.0}])
+        if isinstance(opacity_curve_raw, list) and all(isinstance(x, dict) for x in opacity_curve_raw):
+            opacity_curve = opacity_curve_raw
+        else:
+            opacity_curve = [{"t": 0.0, "v": 1.0}]
+
+        motion_raw = layer.get("motion")
+        motion_spec = motion_raw if isinstance(motion_raw, dict) else None
+
+        text_raw = layer.get("text")
+        if isinstance(text_raw, dict):
+            text_spec = text_raw
+        elif isinstance(text_raw, str) and text_raw.strip():
+            text_spec = {"content": text_raw.strip()}
+        else:
+            text_spec = None
 
         clip = None
 

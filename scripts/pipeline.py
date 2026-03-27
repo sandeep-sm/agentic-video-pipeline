@@ -629,6 +629,9 @@ def run_pipeline(
         # Record output
         if result.output_path and result.output_path.exists():
             task_outputs[task_id] = result.output_path
+            output_ref = str(task_node.get("output_ref", "")).strip()
+            if output_ref:
+                task_outputs[output_ref] = result.output_path
 
         # Write task status to disk immediately (resumability)
         task_node["status"] = "complete" if result.success else "failed"
@@ -655,13 +658,13 @@ def run_pipeline(
             "error_message": str(exc),
             "suggestion": "Check moviepy installation and ffmpeg availability.",
         })
-        final_output_path = Path("")  # Mark as non-existent for QA
+        final_output_path = None  # Mark as non-existent for QA
 
     # ──────────────────────────────────────────────────────────────────────────
     # STAGE 6 — Final QA
     # ──────────────────────────────────────────────────────────────────────────
     logger.info("[Stage 6] Running final QA...")
-    if final_output_path and final_output_path.exists():
+    if final_output_path is not None and final_output_path.exists():
         qa_result = run_qa(
             output_path=final_output_path,
             spec=spec,

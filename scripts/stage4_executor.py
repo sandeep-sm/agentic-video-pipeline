@@ -249,28 +249,93 @@ def _get_output_dir(intermediates_dir: Path, task_id: str) -> Path:
     return d
 
 
+def _resolve_existing_path(raw_ref: str, root: Path) -> Path | None:
+    """Resolve a user/task-provided path-like string to an existing file path."""
+    ref = str(raw_ref or "").strip()
+    if not ref:
+        return None
+
+    candidates = [
+        Path(ref),
+        root / ref,
+        root / "assets" / ref,
+        root / "assets" / Path(ref).name,
+    ]
+    for p in candidates:
+        if p.exists() and p.is_file():
+            return p
+    return None
+
+
+def _find_source_image_path(task_node: dict) -> Path | None:
+    """Find a usable source image path from varied planner input schemas."""
+    from scripts.utils import get_project_root  # noqa: PLC0415
+
+    root = get_project_root()
+    inputs = task_node.get("inputs", {}) or {}
+
+    preferred_keys = [
+        "image",
+        "image_path",
+        "source_image",
+        "source_image_path",
+        "input_image",
+        "asset",
+        "asset_path",
+        "reference_image",
+        "task_ref",
+        "path",
+        "file",
+    ]
+
+    # 1) Preferred direct keys
+    for key in preferred_keys:
+        val = inputs.get(key)
+        if isinstance(val, str):
+            p = _resolve_existing_path(val, root)
+            if p:
+                return p
+        elif isinstance(val, dict):
+            for subkey in ("path", "file", "image", "src", "value"):
+                subval = val.get(subkey)
+                if isinstance(subval, str):
+                    p = _resolve_existing_path(subval, root)
+                    if p:
+                        return p
+
+    # 2) Fallback: scan any string-ish values for common image extensions
+    for _, val in inputs.items():
+        if isinstance(val, str):
+            low = val.lower()
+            if any(ext in low for ext in (".png", ".jpg", ".jpeg", ".webp")):
+                p = _resolve_existing_path(val, root)
+                if p:
+                    return p
+        elif isinstance(val, list):
+            for item in val:
+                if isinstance(item, str):
+                    p = _resolve_existing_path(item, root)
+                    if p and p.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp"}:
+                        return p
+
+    return None
+
+
 def _execute_image_to_video(task_node: dict, model: dict, output_dir: Path) -> Path:
     out = output_dir / "output.mp4"
     inputs = task_node.get("inputs", {})
     duration = float(inputs.get("duration_seconds", 3.0))
-    image_ref = str(inputs.get("image", "")).strip()
     logger.info("[stub] image_to_video → %s (model=%s)", out, model.get("model_id", "?"))
 
-    source_image: Path | None = None
-    if image_ref:
-        from scripts.utils import get_project_root  # noqa: PLC0415
-
-        root = get_project_root()
-        candidate = root / image_ref
-        if candidate.exists():
-            source_image = candidate
-        else:
-            candidate2 = root / "assets" / Path(image_ref).name
-            if candidate2.exists():
-                source_image = candidate2
+    source_image = _find_source_image_path(task_node)
 
     if source_image and _write_image_motion_mp4(source_image, out, duration):
         return out
+
+    logger.warning(
+        "image_to_video stub could not resolve source image for task '%s'; using black placeholder.",
+        task_node.get("task_id", "?"),
+    )
 
     _write_placeholder_mp4(out, duration)
     return out
